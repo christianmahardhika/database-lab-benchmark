@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: bench-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: bench
+      MONGO_INITDB_ROOT_PASSWORD: bench
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    command: >
+      --wiredTigerCacheSizeGB 1
+      --setParameter diagnosticDataCollectionEnabled=false
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongodb_data:

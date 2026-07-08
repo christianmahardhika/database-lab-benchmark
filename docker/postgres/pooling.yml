@@ -1,0 +1,47 @@
+# PostgreSQL + PgBouncer Lab
+services:
+  pg-pooling-db:
+    image: postgres:16-alpine
+    container_name: pg-pooling-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pg-pooling-data:/var/lib/postgresql/data
+    ports:
+      - "5439:5432"
+    networks:
+      - pooling-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@pg-pooling-db:5432/postgres
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 20
+      MIN_POOL_SIZE: 5
+      AUTH_TYPE: md5
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./userlist.txt:/etc/pgbouncer/userlist.txt
+    ports:
+      - "6432:6432"
+    depends_on:
+      pg-pooling-db:
+        condition: service_healthy
+    networks:
+      - pooling-net
+
+volumes:
+  pg-pooling-data:
+
+networks:
+  pooling-net:

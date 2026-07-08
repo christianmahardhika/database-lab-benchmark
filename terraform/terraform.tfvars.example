@@ -1,0 +1,14 @@
+# Terraform Variables Example
+# Copy to terraform.tfvars and customize
+
+aws_region    = "ap-southeast-1"
+instance_type = "m6i.2xlarge"    # 8 vCPU, 32GB RAM (~$0.384/hr)
+key_name      = "your-ssh-key"   # Your EC2 key pair name
+spot_instance = false            # Set true for ~60% cost savings
+volume_size   = 200              # GB
+volume_iops   = 3000             # gp3 IOPS
+
+# Instance options:
+# - m6i.xlarge:   4 vCPU, 16GB  (~$0.192/hr) - minimal, sequential only
+# - m6i.2xlarge:  8 vCPU, 32GB  (~$0.384/hr) - recommended
+# - m6i.4xlarge: 16 vCPU, 64GB  (~$0.768/hr) - parallel benchmarks

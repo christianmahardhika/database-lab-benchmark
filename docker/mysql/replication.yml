@@ -1,0 +1,63 @@
+# MySQL GTID-based Replication Lab
+# Based on: https://dev.mysql.com/doc/refman/8.0/en/replication.html
+
+services:
+  mysql-source:
+    image: mysql:8.0
+    container_name: mysql-source
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: testdb
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --log-replica-updates=ON
+      - --binlog-expire-logs-seconds=604800
+    volumes:
+      - mysql-source-data:/var/lib/mysql
+      - ./init-source.sql:/docker-entrypoint-initdb.d/init-source.sql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - mysql-net
+
+  mysql-replica:
+    image: mysql:8.0
+    container_name: mysql-replica
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    command:
+      - --server-id=2
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --log-replica-updates=ON
+      - --read-only=ON
+      - --super-read-only=ON
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./init-replica.sql:/docker-entrypoint-initdb.d/init-replica.sql
+    ports:
+      - "3307:3306"
+    depends_on:
+      mysql-source:
+        condition: service_healthy
+    networks:
+      - mysql-net
+
+volumes:
+  mysql-source-data:
+  mysql-replica-data:
+
+networks:
+  mysql-net:
+    driver: bridge

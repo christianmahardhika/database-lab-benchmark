@@ -1,0 +1,101 @@
+# MongoDB Sharded Cluster Lab
+# Based on: https://www.mongodb.com/docs/manual/sharding/
+# Architecture: 2 shards (each replica set) + config servers + mongos router
+
+services:
+  # Config Server Replica Set (3 nodes)
+  config1:
+    image: mongo:7.0
+    container_name: mongo-config1
+    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    volumes:
+      - config1-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  config2:
+    image: mongo:7.0
+    container_name: mongo-config2
+    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    volumes:
+      - config2-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  config3:
+    image: mongo:7.0
+    container_name: mongo-config3
+    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    volumes:
+      - config3-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  # Shard 1 Replica Set (Primary + Secondary)
+  shard1-primary:
+    image: mongo:7.0
+    container_name: mongo-shard1-primary
+    command: mongod --shardsvr --replSet shard1RS --bind_ip_all --port 27017
+    volumes:
+      - shard1-primary-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  shard1-secondary:
+    image: mongo:7.0
+    container_name: mongo-shard1-secondary
+    command: mongod --shardsvr --replSet shard1RS --bind_ip_all --port 27017
+    volumes:
+      - shard1-secondary-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  # Shard 2 Replica Set (Primary + Secondary)
+  shard2-primary:
+    image: mongo:7.0
+    container_name: mongo-shard2-primary
+    command: mongod --shardsvr --replSet shard2RS --bind_ip_all --port 27017
+    volumes:
+      - shard2-primary-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  shard2-secondary:
+    image: mongo:7.0
+    container_name: mongo-shard2-secondary
+    command: mongod --shardsvr --replSet shard2RS --bind_ip_all --port 27017
+    volumes:
+      - shard2-secondary-data:/data/db
+    networks:
+      - mongo-shard-net
+
+  # Mongos Router
+  mongos:
+    image: mongo:7.0
+    container_name: mongo-router
+    command: mongos --configdb configRS/config1:27017,config2:27017,config3:27017 --bind_ip_all --port 27017
+    ports:
+      - "27020:27017"
+    depends_on:
+      - config1
+      - config2
+      - config3
+      - shard1-primary
+      - shard1-secondary
+      - shard2-primary
+      - shard2-secondary
+    networks:
+      - mongo-shard-net
+
+volumes:
+  config1-data:
+  config2-data:
+  config3-data:
+  shard1-primary-data:
+  shard1-secondary-data:
+  shard2-primary-data:
+  shard2-secondary-data:
+
+networks:
+  mongo-shard-net:
+    driver: bridge

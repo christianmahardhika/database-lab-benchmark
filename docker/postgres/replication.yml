@@ -1,0 +1,79 @@
+# PostgreSQL Streaming Replication Lab
+# Based on: https://www.postgresql.org/docs/current/warm-standby.html
+
+services:
+  pg-primary:
+    image: postgres:16-alpine
+    container_name: pg-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    command: |
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=3
+      -c max_replication_slots=3
+      -c hot_standby=on
+      -c archive_mode=on
+      -c archive_command='cp %p /var/lib/postgresql/archive/%f'
+    volumes:
+      - pg-primary-data:/var/lib/postgresql/data
+      - pg-archive:/var/lib/postgresql/archive
+      - ./init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-net
+
+  pg-replica:
+    image: postgres:16-alpine
+    container_name: pg-replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGPASSWORD: replicator_pass
+    command: |
+      bash -c "
+        # Wait for primary to be ready
+        until pg_isready -h pg-primary -U postgres; do
+          echo 'Waiting for primary...'
+          sleep 2
+        done
+        
+        # Remove any existing data
+        rm -rf /var/lib/postgresql/data/*
+        
+        # Take base backup from primary
+        PGPASSWORD=replicator_pass pg_basebackup -h pg-primary -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R
+        
+        # Fix ownership and permissions
+        chown -R postgres:postgres /var/lib/postgresql/data
+        chmod 0700 /var/lib/postgresql/data
+        
+        # Start postgres as postgres user
+        exec su-exec postgres postgres
+      "
+    volumes:
+      - pg-replica-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    networks:
+      - pg-net
+
+volumes:
+  pg-primary-data:
+  pg-replica-data:
+  pg-archive:
+
+networks:
+  pg-net:
+    driver: bridge

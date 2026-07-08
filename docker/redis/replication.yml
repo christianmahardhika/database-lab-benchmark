@@ -1,0 +1,94 @@
+# Redis Sentinel Lab (High Availability)
+# Based on: https://redis.io/docs/management/sentinel/
+
+services:
+  redis-master:
+    image: redis:7-alpine
+    container_name: redis-master
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-master-data:/data
+    ports:
+      - "6390:6379"
+    networks:
+      - redis-net
+
+  redis-replica1:
+    image: redis:7-alpine
+    container_name: redis-replica1
+    command: redis-server --appendonly yes --replicaof redis-master 6379
+    volumes:
+      - redis-replica1-data:/data
+    ports:
+      - "6391:6379"
+    depends_on:
+      - redis-master
+    networks:
+      - redis-net
+
+  redis-replica2:
+    image: redis:7-alpine
+    container_name: redis-replica2
+    command: redis-server --appendonly yes --replicaof redis-master 6379
+    volumes:
+      - redis-replica2-data:/data
+    ports:
+      - "6392:6379"
+    depends_on:
+      - redis-master
+    networks:
+      - redis-net
+
+  redis-sentinel1:
+    image: redis:7-alpine
+    container_name: redis-sentinel1
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/redis/sentinel.conf
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+    networks:
+      - redis-net
+
+  redis-sentinel2:
+    image: redis:7-alpine
+    container_name: redis-sentinel2
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/redis/sentinel.conf
+    ports:
+      - "26380:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+    networks:
+      - redis-net
+
+  redis-sentinel3:
+    image: redis:7-alpine
+    container_name: redis-sentinel3
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/redis/sentinel.conf
+    ports:
+      - "26381:26379"
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+    networks:
+      - redis-net
+
+volumes:
+  redis-master-data:
+  redis-replica1-data:
+  redis-replica2-data:
+
+networks:
+  redis-net:
+    driver: bridge
