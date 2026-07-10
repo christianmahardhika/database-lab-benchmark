@@ -1,0 +1,249 @@
+# Milvus Distributed Cluster Lab (Near-Production)
+# Based on: https://milvus.io/docs/install_cluster-docker.md
+# Separated components: Proxy, Query Node, Data Node, Index Node
+# Proves: Horizontal scaling for vector search, separated compute/storage
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.14
+    container_name: milvus-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    volumes:
+      - etcd-data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - milvus-cluster-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: milvus-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    command: minio server /minio_data --console-address ":9001"
+    volumes:
+      - minio-data:/minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - milvus-cluster-net
+
+  pulsar:
+    image: apachepulsar/pulsar:3.0.0
+    container_name: milvus-pulsar
+    command: bin/pulsar standalone
+    volumes:
+      - pulsar-data:/pulsar/data
+    healthcheck:
+      test: ["CMD-SHELL", "bin/pulsar-admin brokers healthcheck || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    networks:
+      - milvus-cluster-net
+
+  rootcoord:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-rootcoord
+    command: ["milvus", "run", "rootcoord"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      pulsar:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - milvus-cluster-net
+
+  querycoord:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-querycoord
+    command: ["milvus", "run", "querycoord"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - rootcoord
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - milvus-cluster-net
+
+  querynode-1:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-querynode-1
+    command: ["milvus", "run", "querynode"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - querycoord
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    networks:
+      - milvus-cluster-net
+
+  querynode-2:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-querynode-2
+    command: ["milvus", "run", "querynode"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - querycoord
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    networks:
+      - milvus-cluster-net
+
+  datacoord:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-datacoord
+    command: ["milvus", "run", "datacoord"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - rootcoord
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - milvus-cluster-net
+
+  datanode-1:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-datanode-1
+    command: ["milvus", "run", "datanode"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - datacoord
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    networks:
+      - milvus-cluster-net
+
+  indexcoord:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-indexcoord
+    command: ["milvus", "run", "indexcoord"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - rootcoord
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - milvus-cluster-net
+
+  indexnode-1:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-indexnode-1
+    command: ["milvus", "run", "indexnode"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    depends_on:
+      - indexcoord
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    networks:
+      - milvus-cluster-net
+
+  proxy:
+    image: milvusdb/milvus:v2.4.5
+    container_name: milvus-proxy
+    command: ["milvus", "run", "proxy"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PULSAR_ADDRESS: pulsar://pulsar:6650
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - rootcoord
+      - querycoord
+      - datacoord
+      - indexcoord
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    networks:
+      - milvus-cluster-net
+
+volumes:
+  etcd-data:
+  minio-data:
+  pulsar-data:
+
+networks:
+  milvus-cluster-net:
+    driver: bridge

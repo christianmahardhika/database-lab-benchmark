@@ -1,0 +1,27 @@
+services:
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: bench-valkey
+    ports:
+      - "6381:6379"
+    volumes:
+      - valkey_data:/data
+    command: >
+      valkey-server
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --appendonly no
+      --save ""
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  valkey_data:

@@ -1,0 +1,123 @@
+# Elasticsearch 3-Node Cluster Lab (Near-Production)
+# Based on: https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
+# 3 nodes with discovery, 1 primary + 1 replica per shard
+# Proves: Horizontal scaling, shard distribution, fault tolerance
+
+services:
+  es-node1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    container_name: es-node1
+    environment:
+      - node.name=es-node1
+      - cluster.name=bench-cluster
+      - discovery.seed_hosts=es-node2,es-node3
+      - cluster.initial_master_nodes=es-node1,es-node2,es-node3
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-node1-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:9200/_cluster/health?wait_for_status=green&timeout=5s || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - es-cluster-net
+
+  es-node2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    container_name: es-node2
+    environment:
+      - node.name=es-node2
+      - cluster.name=bench-cluster
+      - discovery.seed_hosts=es-node1,es-node3
+      - cluster.initial_master_nodes=es-node1,es-node2,es-node3
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-node2-data:/usr/share/elasticsearch/data
+    ports:
+      - "9201:9200"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - es-cluster-net
+
+  es-node3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    container_name: es-node3
+    environment:
+      - node.name=es-node3
+      - cluster.name=bench-cluster
+      - discovery.seed_hosts=es-node1,es-node2
+      - cluster.initial_master_nodes=es-node1,es-node2,es-node3
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-node3-data:/usr/share/elasticsearch/data
+    ports:
+      - "9202:9200"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - es-cluster-net
+
+volumes:
+  es-node1-data:
+  es-node2-data:
+  es-node3-data:
+
+networks:
+  es-cluster-net:
+    driver: bridge

@@ -1,0 +1,199 @@
+# ClickHouse Cluster Lab (Near-Production)
+# Based on: https://clickhouse.com/docs/en/architecture/replication
+# 2 shards × 2 replicas + ClickHouse Keeper (ZooKeeper replacement)
+# Proves: Horizontal scaling for analytical queries, replicated fault tolerance
+
+services:
+  clickhouse-keeper-1:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-keeper-1
+    volumes:
+      - ch-keeper-1-data:/var/lib/clickhouse
+      - ./config/keeper1.xml:/etc/clickhouse-keeper/config.xml
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 9181 | grep -q imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ch-cluster-net
+
+  clickhouse-keeper-2:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-keeper-2
+    volumes:
+      - ch-keeper-2-data:/var/lib/clickhouse
+      - ./config/keeper2.xml:/etc/clickhouse-keeper/config.xml
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 9181 | grep -q imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ch-cluster-net
+
+  clickhouse-keeper-3:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-keeper-3
+    volumes:
+      - ch-keeper-3-data:/var/lib/clickhouse
+      - ./config/keeper3.xml:/etc/clickhouse-keeper/config.xml
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 9181 | grep -q imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ch-cluster-net
+
+  clickhouse-shard1-replica1:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-s1r1
+    environment:
+      CLICKHOUSE_DB: benchmark
+      CLICKHOUSE_USER: bench
+      CLICKHOUSE_PASSWORD: bench
+    volumes:
+      - ch-s1r1-data:/var/lib/clickhouse
+      - ./config/cluster-node.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/macros-s1r1.xml:/etc/clickhouse-server/config.d/macros.xml
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      clickhouse-keeper-1:
+        condition: service_healthy
+      clickhouse-keeper-2:
+        condition: service_healthy
+      clickhouse-keeper-3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch-cluster-net
+
+  clickhouse-shard1-replica2:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-s1r2
+    environment:
+      CLICKHOUSE_DB: benchmark
+      CLICKHOUSE_USER: bench
+      CLICKHOUSE_PASSWORD: bench
+    volumes:
+      - ch-s1r2-data:/var/lib/clickhouse
+      - ./config/cluster-node.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/macros-s1r2.xml:/etc/clickhouse-server/config.d/macros.xml
+    ports:
+      - "8124:8123"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      clickhouse-keeper-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch-cluster-net
+
+  clickhouse-shard2-replica1:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-s2r1
+    environment:
+      CLICKHOUSE_DB: benchmark
+      CLICKHOUSE_USER: bench
+      CLICKHOUSE_PASSWORD: bench
+    volumes:
+      - ch-s2r1-data:/var/lib/clickhouse
+      - ./config/cluster-node.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/macros-s2r1.xml:/etc/clickhouse-server/config.d/macros.xml
+    ports:
+      - "8125:8123"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      clickhouse-keeper-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch-cluster-net
+
+  clickhouse-shard2-replica2:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: ch-s2r2
+    environment:
+      CLICKHOUSE_DB: benchmark
+      CLICKHOUSE_USER: bench
+      CLICKHOUSE_PASSWORD: bench
+    volumes:
+      - ch-s2r2-data:/var/lib/clickhouse
+      - ./config/cluster-node.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./config/macros-s2r2.xml:/etc/clickhouse-server/config.d/macros.xml
+    ports:
+      - "8126:8123"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      clickhouse-keeper-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch-cluster-net
+
+volumes:
+  ch-keeper-1-data:
+  ch-keeper-2-data:
+  ch-keeper-3-data:
+  ch-s1r1-data:
+  ch-s1r2-data:
+  ch-s2r1-data:
+  ch-s2r2-data:
+
+networks:
+  ch-cluster-net:
+    driver: bridge

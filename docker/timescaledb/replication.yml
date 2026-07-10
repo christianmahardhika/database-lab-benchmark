@@ -1,0 +1,88 @@
+# TimescaleDB Streaming Replication Lab (Near-Production)
+# Based on: https://docs.timescale.com/self-hosted/latest/replication-and-ha/
+# Primary + Replica with PG streaming replication
+# Proves: HA for time-series workloads, read scaling
+
+services:
+  timescale-primary:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescale-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: benchmark
+    command: |
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=3
+      -c max_replication_slots=3
+      -c hot_standby=on
+      -c shared_preload_libraries=timescaledb
+      -c timescaledb.max_background_workers=4
+    volumes:
+      - timescale-primary-data:/var/lib/postgresql/data
+      - ./init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh
+    ports:
+      - "5433:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.5"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - timescale-net
+
+  timescale-replica:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescale-replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGPASSWORD: replicator_pass
+    command: |
+      bash -c "
+        until pg_isready -h timescale-primary -U postgres; do
+          echo 'Waiting for primary...'
+          sleep 2
+        done
+
+        rm -rf /var/lib/postgresql/data/*
+
+        PGPASSWORD=replicator_pass pg_basebackup \
+          -h timescale-primary -U replicator \
+          -D /var/lib/postgresql/data -Fp -Xs -P -R
+
+        chown -R postgres:postgres /var/lib/postgresql/data
+        chmod 0700 /var/lib/postgresql/data
+
+        exec su-exec postgres postgres \
+          -c shared_preload_libraries=timescaledb \
+          -c timescaledb.max_background_workers=4
+      "
+    volumes:
+      - timescale-replica-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.5"
+    depends_on:
+      timescale-primary:
+        condition: service_healthy
+    networks:
+      - timescale-net
+
+volumes:
+  timescale-primary-data:
+  timescale-replica-data:
+
+networks:
+  timescale-net:
+    driver: bridge

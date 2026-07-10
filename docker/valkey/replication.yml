@@ -1,0 +1,128 @@
+# Valkey Sentinel Replication Lab (Near-Production)
+# Based on: https://valkey.io/docs/management/sentinel/
+# Master + 2 Replicas + 3 Sentinel nodes for automatic failover
+# Proves: HA identical to Redis Sentinel, drop-in replacement
+
+services:
+  valkey-master:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-master
+    command: >
+      valkey-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - valkey-master-data:/data
+    ports:
+      - "6381:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - valkey-net
+
+  valkey-replica1:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-replica1
+    command: >
+      valkey-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --replicaof valkey-master 6379
+    volumes:
+      - valkey-replica1-data:/data
+    ports:
+      - "6382:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    depends_on:
+      valkey-master:
+        condition: service_healthy
+    networks:
+      - valkey-net
+
+  valkey-replica2:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-replica2
+    command: >
+      valkey-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --replicaof valkey-master 6379
+    volumes:
+      - valkey-replica2-data:/data
+    ports:
+      - "6383:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    depends_on:
+      valkey-master:
+        condition: service_healthy
+    networks:
+      - valkey-net
+
+  valkey-sentinel1:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-sentinel1
+    command: valkey-sentinel /etc/valkey/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/valkey/sentinel.conf
+    ports:
+      - "26382:26379"
+    depends_on:
+      - valkey-master
+      - valkey-replica1
+      - valkey-replica2
+    networks:
+      - valkey-net
+
+  valkey-sentinel2:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-sentinel2
+    command: valkey-sentinel /etc/valkey/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/valkey/sentinel.conf
+    ports:
+      - "26383:26379"
+    depends_on:
+      - valkey-master
+    networks:
+      - valkey-net
+
+  valkey-sentinel3:
+    image: valkey/valkey:7.2-alpine
+    container_name: valkey-sentinel3
+    command: valkey-sentinel /etc/valkey/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/valkey/sentinel.conf
+    ports:
+      - "26384:26379"
+    depends_on:
+      - valkey-master
+    networks:
+      - valkey-net
+
+volumes:
+  valkey-master-data:
+  valkey-replica1-data:
+  valkey-replica2-data:
+
+networks:
+  valkey-net:
+    driver: bridge

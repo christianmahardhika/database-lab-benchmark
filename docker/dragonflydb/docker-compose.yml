@@ -1,0 +1,25 @@
+services:
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: bench-dragonfly
+    ports:
+      - "6380:6379"
+    volumes:
+      - dragonfly_data:/data
+    command: >
+      dragonfly
+      --maxmemory=1gb
+      --proactor_threads=2
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dragonfly_data:

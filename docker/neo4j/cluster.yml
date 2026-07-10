@@ -1,0 +1,162 @@
+# Neo4j Cluster Lab (Near-Production)
+# Based on: https://neo4j.com/docs/operations-manual/current/clustering/
+# 3 Core nodes (Raft consensus) + 1 Read Replica
+# Proves: HA for graph queries, read scaling, leader election
+
+services:
+  neo4j-core1:
+    image: neo4j:5-enterprise
+    container_name: neo4j-core1
+    environment:
+      NEO4J_AUTH: neo4j/benchpass123
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_server_default__listen__address: 0.0.0.0
+      NEO4J_dbms_cluster_discovery_endpoints: neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
+      NEO4J_initial_dbms_default__primaries__count: 3
+      NEO4J_server_discovery_advertised__address: neo4j-core1:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core1:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core1:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core1:7687
+      NEO4J_server_http_advertised__address: neo4j-core1:7474
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j-core1-data:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - neo4j-cluster-net
+
+  neo4j-core2:
+    image: neo4j:5-enterprise
+    container_name: neo4j-core2
+    environment:
+      NEO4J_AUTH: neo4j/benchpass123
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_server_default__listen__address: 0.0.0.0
+      NEO4J_dbms_cluster_discovery_endpoints: neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
+      NEO4J_initial_dbms_default__primaries__count: 3
+      NEO4J_server_discovery_advertised__address: neo4j-core2:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core2:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core2:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core2:7687
+      NEO4J_server_http_advertised__address: neo4j-core2:7474
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j-core2-data:/data
+    ports:
+      - "7475:7474"
+      - "7688:7687"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - neo4j-cluster-net
+
+  neo4j-core3:
+    image: neo4j:5-enterprise
+    container_name: neo4j-core3
+    environment:
+      NEO4J_AUTH: neo4j/benchpass123
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_server_default__listen__address: 0.0.0.0
+      NEO4J_dbms_cluster_discovery_endpoints: neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
+      NEO4J_initial_dbms_default__primaries__count: 3
+      NEO4J_server_discovery_advertised__address: neo4j-core3:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core3:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core3:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core3:7687
+      NEO4J_server_http_advertised__address: neo4j-core3:7474
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j-core3-data:/data
+    ports:
+      - "7476:7474"
+      - "7689:7687"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - neo4j-cluster-net
+
+  neo4j-reader:
+    image: neo4j:5-enterprise
+    container_name: neo4j-reader
+    environment:
+      NEO4J_AUTH: neo4j/benchpass123
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_server_default__listen__address: 0.0.0.0
+      NEO4J_dbms_cluster_discovery_endpoints: neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
+      NEO4J_initial_dbms_default__secondaries__count: 1
+      NEO4J_server_discovery_advertised__address: neo4j-reader:5000
+      NEO4J_server_cluster_advertised__address: neo4j-reader:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-reader:7000
+      NEO4J_server_bolt_advertised__address: neo4j-reader:7687
+      NEO4J_server_http_advertised__address: neo4j-reader:7474
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 256m
+      NEO4J_server_memory_pagecache_size: 256m
+    volumes:
+      - neo4j-reader-data:/data
+    ports:
+      - "7477:7474"
+      - "7690:7687"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    depends_on:
+      neo4j-core1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    networks:
+      - neo4j-cluster-net
+
+volumes:
+  neo4j-core1-data:
+  neo4j-core2-data:
+  neo4j-core3-data:
+  neo4j-reader-data:
+
+networks:
+  neo4j-cluster-net:
+    driver: bridge

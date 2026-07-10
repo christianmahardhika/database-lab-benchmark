@@ -1,0 +1,33 @@
+# Prometheus TSDB Benchmark Lab (Standalone)
+# Based on: https://prometheus.io/docs/prometheus/latest/storage/
+# Pull-based monitoring TSDB with custom local storage engine
+# For benchmark: use remote_write API to push metrics directly
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: bench-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=24h"
+      - "--web.enable-remote-write-receiver"
+      - "--web.enable-lifecycle"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  prometheus_data:

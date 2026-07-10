@@ -1,0 +1,101 @@
+# CockroachDB 3-Node Cluster Lab (Near-Production)
+# Based on: https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-with-kubernetes
+# 3 nodes with Raft consensus, auto-sharding via ranges
+# Proves: Distributed ACID transactions, automatic rebalancing, no SPOF
+
+services:
+  cockroach-1:
+    image: cockroachdb/cockroach:v23.2.3
+    container_name: cockroach-1
+    command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
+    volumes:
+      - cockroach-1-data:/cockroach/cockroach-data
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/health?ready=1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - crdb-cluster-net
+
+  cockroach-2:
+    image: cockroachdb/cockroach:v23.2.3
+    container_name: cockroach-2
+    command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
+    volumes:
+      - cockroach-2-data:/cockroach/cockroach-data
+    ports:
+      - "26258:26257"
+      - "8081:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/health?ready=1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - crdb-cluster-net
+
+  cockroach-3:
+    image: cockroachdb/cockroach:v23.2.3
+    container_name: cockroach-3
+    command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
+    volumes:
+      - cockroach-3-data:/cockroach/cockroach-data
+    ports:
+      - "26259:26257"
+      - "8082:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/health?ready=1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - crdb-cluster-net
+
+  # One-shot init container to bootstrap the cluster
+  cockroach-init:
+    image: cockroachdb/cockroach:v23.2.3
+    container_name: cockroach-init
+    command: init --insecure --host=cockroach-1:26257
+    depends_on:
+      cockroach-1:
+        condition: service_healthy
+      cockroach-2:
+        condition: service_healthy
+      cockroach-3:
+        condition: service_healthy
+    networks:
+      - crdb-cluster-net
+
+volumes:
+  cockroach-1-data:
+  cockroach-2-data:
+  cockroach-3-data:
+
+networks:
+  crdb-cluster-net:
+    driver: bridge

@@ -1,0 +1,99 @@
+# Qdrant 3-Node Cluster Lab (Near-Production)
+# Based on: https://qdrant.tech/documentation/guides/distributed_deployment/
+# Raft consensus for metadata, distributed shards for vectors
+# Proves: Horizontal scaling for vector search, shard replication
+
+services:
+  qdrant-node1:
+    image: qdrant/qdrant:v1.9.7
+    container_name: qdrant-node1
+    command: ./qdrant --uri http://qdrant-node1:6335
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      QDRANT__CLUSTER__ENABLED: "true"
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__CLUSTER__P2P__PORT: 6335
+    volumes:
+      - qdrant-node1-data:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - qdrant-cluster-net
+
+  qdrant-node2:
+    image: qdrant/qdrant:v1.9.7
+    container_name: qdrant-node2
+    command: ./qdrant --bootstrap http://qdrant-node1:6335 --uri http://qdrant-node2:6335
+    ports:
+      - "6336:6333"
+    environment:
+      QDRANT__CLUSTER__ENABLED: "true"
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__CLUSTER__P2P__PORT: 6335
+    volumes:
+      - qdrant-node2-data:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    depends_on:
+      qdrant-node1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - qdrant-cluster-net
+
+  qdrant-node3:
+    image: qdrant/qdrant:v1.9.7
+    container_name: qdrant-node3
+    command: ./qdrant --bootstrap http://qdrant-node1:6335 --uri http://qdrant-node3:6335
+    ports:
+      - "6337:6333"
+    environment:
+      QDRANT__CLUSTER__ENABLED: "true"
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__CLUSTER__P2P__PORT: 6335
+    volumes:
+      - qdrant-node3-data:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1"
+    depends_on:
+      qdrant-node1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - qdrant-cluster-net
+
+volumes:
+  qdrant-node1-data:
+  qdrant-node2-data:
+  qdrant-node3-data:
+
+networks:
+  qdrant-cluster-net:
+    driver: bridge

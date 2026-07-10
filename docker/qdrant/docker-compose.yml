@@ -1,0 +1,28 @@
+# Qdrant Vector Database (Standalone)
+# Based on: https://qdrant.tech/documentation/guides/installation/
+# Rust-native, HNSW index, claims highest RPS among vector DBs
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.7
+    container_name: bench-qdrant
+    ports:
+      - "6333:6333" # REST API
+      - "6334:6334" # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  qdrant_data:

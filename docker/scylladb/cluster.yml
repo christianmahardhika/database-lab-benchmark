@@ -1,0 +1,102 @@
+# ScyllaDB 3-Node Cluster Lab (Near-Production)
+# Based on: https://docs.scylladb.com/operating-scylla/procedures/cluster-management/
+# Shard-per-core architecture, consistent hashing, RF=3
+# Proves: Linear horizontal scaling, sub-ms p99 latency under replication
+
+services:
+  scylla-node1:
+    image: scylladb/scylla:5.4
+    container_name: scylla-node1
+    command: >
+      --seeds=scylla-node1
+      --smp=1
+      --memory=512M
+      --overprovisioned=1
+      --api-address=0.0.0.0
+      --alternator-port=8000
+      --authenticator=AllowAllAuthenticator
+    volumes:
+      - scylla-node1-data:/var/lib/scylla
+    ports:
+      - "9043:9042"
+      - "9180:9180"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -q UN"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - scylla-cluster-net
+
+  scylla-node2:
+    image: scylladb/scylla:5.4
+    container_name: scylla-node2
+    command: >
+      --seeds=scylla-node1
+      --smp=1
+      --memory=512M
+      --overprovisioned=1
+      --api-address=0.0.0.0
+      --authenticator=AllowAllAuthenticator
+    volumes:
+      - scylla-node2-data:/var/lib/scylla
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      scylla-node1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -q UN"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - scylla-cluster-net
+
+  scylla-node3:
+    image: scylladb/scylla:5.4
+    container_name: scylla-node3
+    command: >
+      --seeds=scylla-node1
+      --smp=1
+      --memory=512M
+      --overprovisioned=1
+      --api-address=0.0.0.0
+      --authenticator=AllowAllAuthenticator
+    volumes:
+      - scylla-node3-data:/var/lib/scylla
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+    depends_on:
+      scylla-node2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -q UN"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - scylla-cluster-net
+
+volumes:
+  scylla-node1-data:
+  scylla-node2-data:
+  scylla-node3-data:
+
+networks:
+  scylla-cluster-net:
+    driver: bridge

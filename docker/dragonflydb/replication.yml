@@ -1,0 +1,67 @@
+# DragonflyDB Replication Lab (Near-Production)
+# Based on: https://www.dragonflydb.io/docs/managing-dragonfly/replication
+# Master + Replica (replicaof command, same as Redis protocol)
+# Proves: Multi-threaded performance under replication, read scaling
+
+services:
+  dragonfly-master:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonfly-master
+    ports:
+      - "6380:6379"
+    command: >
+      dragonfly
+      --maxmemory=512mb
+      --proactor_threads=2
+      --requirepass=""
+    volumes:
+      - dragonfly-master-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dragonfly-net
+
+  dragonfly-replica:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonfly-replica
+    ports:
+      - "6384:6379"
+    command: >
+      dragonfly
+      --maxmemory=512mb
+      --proactor_threads=2
+      --replicaof=dragonfly-master:6379
+      --requirepass=""
+    volumes:
+      - dragonfly-replica-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2"
+    depends_on:
+      dragonfly-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dragonfly-net
+
+volumes:
+  dragonfly-master-data:
+  dragonfly-replica-data:
+
+networks:
+  dragonfly-net:
+    driver: bridge

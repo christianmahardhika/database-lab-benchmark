@@ -1,0 +1,28 @@
+services:
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: bench-influxdb
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: bench
+      DOCKER_INFLUXDB_INIT_PASSWORD: benchpass123
+      DOCKER_INFLUXDB_INIT_ORG: benchmark
+      DOCKER_INFLUXDB_INIT_BUCKET: benchmark
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: bench-token-secret
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  influxdb_data:

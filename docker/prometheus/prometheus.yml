@@ -1,0 +1,11 @@
+# Prometheus config for benchmark lab
+# Minimal config - we use remote_write API to push metrics for benchmarking
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Scrape itself for health metrics
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
