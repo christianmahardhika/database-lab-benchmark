@@ -1,6 +1,6 @@
 services:
   cockroach:
-    image: cockroachdb/cockroach:v24.1.0
+    image: cockroachdb/cockroach:v24.3.0
     container_name: bench-cockroach
     command: start-single-node --insecure --store=attrs=ssd,path=/cockroach/cockroach-data
     ports:

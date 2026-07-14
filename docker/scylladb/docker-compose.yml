@@ -6,7 +6,7 @@ version: '3.8'
 services:
   # ScyllaDB - LSM-tree, Cassandra-compatible but 10x faster
   scylla-1:
-    image: scylladb/scylla:5.4
+    image: scylladb/scylla:6.2
     container_name: scylla-1
     command: --seeds=scylla-1 --smp 2 --memory 1G --overprovisioned 1 --api-address 0.0.0.0
     ports:
@@ -23,7 +23,7 @@ services:
       retries: 10
 
   scylla-2:
-    image: scylladb/scylla:5.4
+    image: scylladb/scylla:6.2
     container_name: scylla-2
     command: --seeds=scylla-1 --smp 2 --memory 1G --overprovisioned 1 --api-address 0.0.0.0
     volumes:

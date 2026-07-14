@@ -5,7 +5,7 @@
 
 services:
   timescale-primary:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg17
     container_name: timescale-primary
     environment:
       POSTGRES_USER: postgres
@@ -38,7 +38,7 @@ services:
       - timescale-net
 
   timescale-replica:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg17
     container_name: timescale-replica
     environment:
       POSTGRES_USER: postgres

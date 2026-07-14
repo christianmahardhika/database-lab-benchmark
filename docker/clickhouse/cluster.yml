@@ -5,7 +5,7 @@
 
 services:
   clickhouse-keeper-1:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-keeper-1
     volumes:
       - ch-keeper-1-data:/var/lib/clickhouse
@@ -25,7 +25,7 @@ services:
       - ch-cluster-net
 
   clickhouse-keeper-2:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-keeper-2
     volumes:
       - ch-keeper-2-data:/var/lib/clickhouse
@@ -45,7 +45,7 @@ services:
       - ch-cluster-net
 
   clickhouse-keeper-3:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-keeper-3
     volumes:
       - ch-keeper-3-data:/var/lib/clickhouse
@@ -65,7 +65,7 @@ services:
       - ch-cluster-net
 
   clickhouse-shard1-replica1:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-s1r1
     environment:
       CLICKHOUSE_DB: benchmark
@@ -99,7 +99,7 @@ services:
       - ch-cluster-net
 
   clickhouse-shard1-replica2:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-s1r2
     environment:
       CLICKHOUSE_DB: benchmark
@@ -128,7 +128,7 @@ services:
       - ch-cluster-net
 
   clickhouse-shard2-replica1:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-s2r1
     environment:
       CLICKHOUSE_DB: benchmark
@@ -157,7 +157,7 @@ services:
       - ch-cluster-net
 
   clickhouse-shard2-replica2:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.12
     container_name: ch-s2r2
     environment:
       CLICKHOUSE_DB: benchmark

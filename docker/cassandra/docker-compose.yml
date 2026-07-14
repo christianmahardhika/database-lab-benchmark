@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   cassandra:
-    image: cassandra:4.1
+    image: cassandra:5.0
     container_name: bench-cassandra
     ports:
       - "9042:9042"

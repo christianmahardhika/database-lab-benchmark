@@ -3,7 +3,7 @@
 
 services:
   redis-master:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-master
     command: redis-server --appendonly yes
     volumes:
@@ -14,7 +14,7 @@ services:
       - redis-net
 
   redis-replica1:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-replica1
     command: redis-server --appendonly yes --replicaof redis-master 6379
     volumes:
@@ -27,7 +27,7 @@ services:
       - redis-net
 
   redis-replica2:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-replica2
     command: redis-server --appendonly yes --replicaof redis-master 6379
     volumes:
@@ -40,7 +40,7 @@ services:
       - redis-net
 
   redis-sentinel1:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-sentinel1
     command: redis-sentinel /etc/redis/sentinel.conf
     volumes:
@@ -55,7 +55,7 @@ services:
       - redis-net
 
   redis-sentinel2:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-sentinel2
     command: redis-sentinel /etc/redis/sentinel.conf
     volumes:
@@ -70,7 +70,7 @@ services:
       - redis-net
 
   redis-sentinel3:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis-sentinel3
     command: redis-sentinel /etc/redis/sentinel.conf
     volumes:

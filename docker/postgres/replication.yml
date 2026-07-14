@@ -3,7 +3,7 @@
 
 services:
   postgres-primary:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: bench-postgres-primary
     environment:
       POSTGRES_USER: bench
@@ -34,7 +34,7 @@ services:
       retries: 5
 
   postgres-standby:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: bench-postgres-standby
     environment:
       PGUSER: replicator

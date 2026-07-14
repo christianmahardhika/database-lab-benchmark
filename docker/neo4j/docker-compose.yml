@@ -1,6 +1,6 @@
 services:
   neo4j:
-    image: neo4j:5.20-community
+    image: neo4j:5-community
     container_name: bench-neo4j
     environment:
       NEO4J_AUTH: neo4j/benchpass123

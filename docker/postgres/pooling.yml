@@ -1,7 +1,7 @@
 # PostgreSQL + PgBouncer Lab
 services:
   pg-pooling-db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: pg-pooling-db
     environment:
       POSTGRES_USER: postgres

@@ -5,7 +5,7 @@
 
 services:
   valkey-master:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-master
     command: >
       valkey-server
@@ -30,7 +30,7 @@ services:
       - valkey-net
 
   valkey-replica1:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-replica1
     command: >
       valkey-server
@@ -54,7 +54,7 @@ services:
       - valkey-net
 
   valkey-replica2:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-replica2
     command: >
       valkey-server
@@ -78,7 +78,7 @@ services:
       - valkey-net
 
   valkey-sentinel1:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-sentinel1
     command: valkey-sentinel /etc/valkey/sentinel.conf
     volumes:
@@ -93,7 +93,7 @@ services:
       - valkey-net
 
   valkey-sentinel2:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-sentinel2
     command: valkey-sentinel /etc/valkey/sentinel.conf
     volumes:
@@ -106,7 +106,7 @@ services:
       - valkey-net
 
   valkey-sentinel3:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: valkey-sentinel3
     command: valkey-sentinel /etc/valkey/sentinel.conf
     volumes:

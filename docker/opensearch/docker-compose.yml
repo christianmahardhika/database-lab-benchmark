@@ -4,7 +4,7 @@
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.15.0
+    image: opensearchproject/opensearch:2.19.0
     container_name: bench-opensearch
     environment:
       - discovery.type=single-node

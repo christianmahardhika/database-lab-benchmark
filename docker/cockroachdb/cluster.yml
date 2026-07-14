@@ -5,7 +5,7 @@
 
 services:
   cockroach-1:
-    image: cockroachdb/cockroach:v23.2.3
+    image: cockroachdb/cockroach:v24.3.0
     container_name: cockroach-1
     command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
     volumes:
@@ -29,7 +29,7 @@ services:
       - crdb-cluster-net
 
   cockroach-2:
-    image: cockroachdb/cockroach:v23.2.3
+    image: cockroachdb/cockroach:v24.3.0
     container_name: cockroach-2
     command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
     volumes:
@@ -53,7 +53,7 @@ services:
       - crdb-cluster-net
 
   cockroach-3:
-    image: cockroachdb/cockroach:v23.2.3
+    image: cockroachdb/cockroach:v24.3.0
     container_name: cockroach-3
     command: start --insecure --join=cockroach-1,cockroach-2,cockroach-3 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080 --store=cockroach-data --cache=.25 --max-sql-memory=.25
     volumes:
@@ -78,7 +78,7 @@ services:
 
   # One-shot init container to bootstrap the cluster
   cockroach-init:
-    image: cockroachdb/cockroach:v23.2.3
+    image: cockroachdb/cockroach:v24.3.0
     container_name: cockroach-init
     command: init --insecure --host=cockroach-1:26257
     depends_on:

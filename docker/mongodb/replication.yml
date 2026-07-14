@@ -3,7 +3,7 @@
 
 services:
   mongo1:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-mongo1
     command: mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
     ports:
@@ -26,7 +26,7 @@ services:
       retries: 5
 
   mongo2:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-mongo2
     command: mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
     ports:
@@ -43,7 +43,7 @@ services:
       - mongo1
 
   mongo3:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-mongo3
     command: mongod --replSet rs0 --bind_ip_all --keyFile /etc/mongo-keyfile
     ports:
@@ -60,7 +60,7 @@ services:
       - mongo1
 
   mongo-init:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: mongo-init
     depends_on:
       mongo1:

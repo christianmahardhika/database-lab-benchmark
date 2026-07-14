@@ -1,6 +1,6 @@
 services:
   valkey:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8.1-alpine
     container_name: bench-valkey
     ports:
       - "6381:6379"

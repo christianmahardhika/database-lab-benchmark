@@ -5,7 +5,7 @@
 
 services:
   etcd:
-    image: quay.io/coreos/etcd:v3.5.14
+    image: quay.io/coreos/etcd:v3.5.17
     container_name: milvus-etcd
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
@@ -61,7 +61,7 @@ services:
       - milvus-cluster-net
 
   rootcoord:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-rootcoord
     command: ["milvus", "run", "rootcoord"]
     environment:
@@ -84,7 +84,7 @@ services:
       - milvus-cluster-net
 
   querycoord:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-querycoord
     command: ["milvus", "run", "querycoord"]
     environment:
@@ -102,7 +102,7 @@ services:
       - milvus-cluster-net
 
   querynode-1:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-querynode-1
     command: ["milvus", "run", "querynode"]
     environment:
@@ -120,7 +120,7 @@ services:
       - milvus-cluster-net
 
   querynode-2:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-querynode-2
     command: ["milvus", "run", "querynode"]
     environment:
@@ -138,7 +138,7 @@ services:
       - milvus-cluster-net
 
   datacoord:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-datacoord
     command: ["milvus", "run", "datacoord"]
     environment:
@@ -156,7 +156,7 @@ services:
       - milvus-cluster-net
 
   datanode-1:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-datanode-1
     command: ["milvus", "run", "datanode"]
     environment:
@@ -174,7 +174,7 @@ services:
       - milvus-cluster-net
 
   indexcoord:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-indexcoord
     command: ["milvus", "run", "indexcoord"]
     environment:
@@ -192,7 +192,7 @@ services:
       - milvus-cluster-net
 
   indexnode-1:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-indexnode-1
     command: ["milvus", "run", "indexnode"]
     environment:
@@ -210,7 +210,7 @@ services:
       - milvus-cluster-net
 
   proxy:
-    image: milvusdb/milvus:v2.4.5
+    image: milvusdb/milvus:v2.5.4
     container_name: milvus-proxy
     command: ["milvus", "run", "proxy"]
     environment:

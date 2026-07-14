@@ -4,7 +4,7 @@
 services:
   # Config Server Replica Set
   configsvr1:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-configsvr1
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
@@ -16,7 +16,7 @@ services:
           cpus: "1"
 
   configsvr2:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-configsvr2
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
@@ -28,7 +28,7 @@ services:
           cpus: "1"
 
   configsvr3:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-configsvr3
     command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
@@ -41,7 +41,7 @@ services:
 
   # Shard 1 (single node for simplicity)
   shard1:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-shard1
     command: mongod --shardsvr --replSet shard1rs --bind_ip_all --port 27018
     volumes:
@@ -54,7 +54,7 @@ services:
 
   # Shard 2 (single node for simplicity)
   shard2:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-shard2
     command: mongod --shardsvr --replSet shard2rs --bind_ip_all --port 27018
     volumes:
@@ -67,7 +67,7 @@ services:
 
   # Mongos Router
   mongos:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: bench-mongos
     command: mongos --configdb configrs/configsvr1:27019,configsvr2:27019,configsvr3:27019 --bind_ip_all --port 27017
     ports:
@@ -86,7 +86,7 @@ services:
 
   # Initialization container
   mongo-init:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: mongo-shard-init
     depends_on:
       - mongos

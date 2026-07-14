@@ -5,7 +5,7 @@
 
 services:
   qdrant-node1:
-    image: qdrant/qdrant:v1.9.7
+    image: qdrant/qdrant:v1.13.0
     container_name: qdrant-node1
     command: ./qdrant --uri http://qdrant-node1:6335
     ports:
@@ -32,7 +32,7 @@ services:
       - qdrant-cluster-net
 
   qdrant-node2:
-    image: qdrant/qdrant:v1.9.7
+    image: qdrant/qdrant:v1.13.0
     container_name: qdrant-node2
     command: ./qdrant --bootstrap http://qdrant-node1:6335 --uri http://qdrant-node2:6335
     ports:
@@ -61,7 +61,7 @@ services:
       - qdrant-cluster-net
 
   qdrant-node3:
-    image: qdrant/qdrant:v1.9.7
+    image: qdrant/qdrant:v1.13.0
     container_name: qdrant-node3
     command: ./qdrant --bootstrap http://qdrant-node1:6335 --uri http://qdrant-node3:6335
     ports:

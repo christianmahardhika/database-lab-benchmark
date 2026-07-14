@@ -5,7 +5,7 @@
 
 services:
   prometheus:
-    image: prom/prometheus:v2.53.0
+    image: prom/prometheus:v3.2.0
     container_name: bench-prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"

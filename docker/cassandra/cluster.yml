@@ -5,7 +5,7 @@
 
 services:
   cassandra-seed:
-    image: cassandra:4.1
+    image: cassandra:5.0
     container_name: cassandra-seed
     environment:
       CASSANDRA_CLUSTER_NAME: bench-cluster
@@ -35,7 +35,7 @@ services:
       - cassandra-cluster-net
 
   cassandra-node2:
-    image: cassandra:4.1
+    image: cassandra:5.0
     container_name: cassandra-node2
     environment:
       CASSANDRA_CLUSTER_NAME: bench-cluster
@@ -66,7 +66,7 @@ services:
       - cassandra-cluster-net
 
   cassandra-node3:
-    image: cassandra:4.1
+    image: cassandra:5.0
     container_name: cassandra-node3
     environment:
       CASSANDRA_CLUSTER_NAME: bench-cluster
