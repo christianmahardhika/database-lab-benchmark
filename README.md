@@ -320,6 +320,91 @@ Full hypothesis list in `docs/official-references/`.
 
 **Key Insight**: MySQL 8.4 shows **even stronger write advantage** (1.81x vs previous 1.53x on 8.0) — InnoDB improvements in 8.4 are real. However, MySQL **tail latency is terrible** (p99 = 46-48ms) while PostgreSQL stays tight (p99 = 5-22ms). For latency-sensitive apps, PG's predictability wins; for raw write throughput, MySQL dominates.
 
+### Experiment 13: Neo4j vs PostgreSQL — Graph (July 14, 2026)
+
+**Setup**: m6i.2xlarge on-demand, ap-southeast-3
+**Config**: 100K rows, 50 goroutines, 3 runs (median)
+**Images**: neo4j:5-community, postgres:17-alpine
+
+| Workload | Neo4j 5 | PostgreSQL 17 | Winner |
+|----------|---------|--------------|--------|
+| **Write** | 5,131 ops/s | 4,195 ops/s | Neo4j (1.22x) |
+| **Read** | 8,386 ops/s | **29,160 ops/s** | PostgreSQL (3.48x) |
+| **Mixed 80/20** | 7,824 ops/s | **17,356 ops/s** | PostgreSQL (2.22x) |
+
+| Metric | Neo4j | PostgreSQL |
+|--------|-------|-----------|
+| Write p50 | **6.52ms** | 11.72ms |
+| Write p99 | 54.02ms | **12.68ms** |
+| Read p50 | 2.55ms | **1.34ms** |
+| Read p99 | 60.32ms | **22.14ms** |
+
+**Hypothesis Validation**:
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| H49 | Neo4j constant-time traversal | ⚠️ Partially — p50 is low but p99 spikes to 60ms |
+| H52 | Neo4j sub-ms single-hop | ❌ p50 = 2.55ms for KV-style lookup (graph overhead) |
+
+**Key Insight**: For **KV-style point lookups**, PostgreSQL is 3.5x faster than Neo4j. Neo4j's advantage is in multi-hop graph traversal (not tested here — this is baseline KV). Neo4j writes slightly faster due to simpler MERGE vs PG's UPSERT with B-Tree index maintenance. The real Neo4j test would be depth-3+ traversal queries (GR-01/GR-02 scenarios).
+
+### Experiment 14: Qdrant vs pgvector — Vector Search (July 14, 2026)
+
+**Setup**: Same instance
+**Config**: 100K 128-dim vectors, 50 goroutines, 3 runs (median)
+**Images**: qdrant:v1.13.0, pgvector/pgvector:pg17
+
+| Workload | Qdrant 1.13 | pgvector (PG17) | Winner |
+|----------|-------------|----------------|--------|
+| **Write (insert vectors)** | 8,935 ops/s | **22,633 ops/s** | pgvector (2.53x) |
+| **Read (ANN search)** | 6,769 ops/s | **10,760 ops/s** | pgvector (1.59x) |
+| **Mixed 80/20** | 1,062 ops/s | **9,542 ops/s** | pgvector (8.99x) |
+
+| Metric | Qdrant | pgvector |
+|--------|--------|----------|
+| Write p50 | 4.64ms | **2.12ms** |
+| Write p99 | 10.52ms | **3.08ms** |
+| Read p50 | 7.18ms | **2.85ms** |
+| Read p99 | **11.71ms** | 40.92ms |
+| Mixed p50 | 55.80ms | **4.17ms** |
+
+**Hypothesis Validation**:
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| H78 | Qdrant highest RPS among vector DBs | ❌ pgvector 1.6-2.5x faster at this scale |
+| H87 | pgvector competitive with dedicated vector DBs | ✅ Outperforms Qdrant at 100K vectors |
+| H88 | pgvector <10ms p95 for HNSW search | ✅ p95 = 3.95ms |
+
+**Key Insight**: **pgvector dominates Qdrant** at 100K vectors (small-medium scale). pgvector's advantage comes from PostgreSQL's efficient connection pooling + in-process HNSW search. Qdrant's HTTP REST API adds serialization overhead per request. Qdrant's claimed advantage emerges at **1M+ vectors** with complex payload filtering — not at this scale. The mixed workload shows Qdrant's indexing background process severely impacts concurrent search (55ms p50!).
+
+### Experiment 15: OpenSearch vs PostgreSQL — Full-Text (July 14, 2026)
+
+**Setup**: Same instance
+**Config**: 100K docs, 50 goroutines, 3 runs (median)
+**Images**: opensearch:2.19.0, postgres:17-alpine
+
+| Workload | OpenSearch 2.19 | PostgreSQL 17 | Winner |
+|----------|----------------|--------------|--------|
+| **Write (index docs)** | 2,043 ops/s | **4,192 ops/s** | PostgreSQL (2.05x) |
+| **Read (search/get)** | 1,809 ops/s | **28,799 ops/s** | PostgreSQL (15.9x) |
+| **Mixed 80/20** | 1,758 ops/s | **17,402 ops/s** | PostgreSQL (9.90x) |
+
+| Metric | OpenSearch | PostgreSQL |
+|--------|-----------|-----------|
+| Write p50 | **9.22ms** | 11.57ms |
+| Write p99 | 107.85ms | **13.48ms** |
+| Read p50 | 9.26ms | **1.35ms** |
+| Read p99 | 124.17ms | **22.70ms** |
+| Mixed p99 | 125.10ms | **5.05ms** |
+
+**Hypothesis Validation**:
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| H44 | OpenSearch near real-time search | ⚠️ Works but 9ms p50 (not sub-ms) |
+| H45 | 100K+ docs/sec indexing (bulk) | ❌ Only 2K/sec single-doc inserts (bulk API not used) |
+| H47 | Full-text faster than SQL | ❌ For KV-style gets, PG is 16x faster |
+
+**Key Insight**: OpenSearch is **massively slower for point lookups** — it's designed for full-text search queries, not KV access patterns. The 2K ops/s write throughput is because we're doing single-document indexing (not bulk API). OpenSearch p99 of 107-125ms reflects JVM GC pauses and segment refresh overhead. For actual full-text search (multi-term queries, fuzzy matching, relevance scoring), OpenSearch would show its advantage — but that requires a different benchmark (text search, not KV get-by-id).
+
 ## 📖 References
 
 - [DDIA Chapter 3: Storage & Retrieval](https://dataintensive.net/)
