@@ -1,11 +1,7 @@
 ---
-inclusion: manual
+name: troubleshoot-database
+description: Diagnose and resolve common database performance and operational issues using structured investigation methodology. Use when debugging slow queries, connection issues, replication problems, or any database incident.
 ---
-
-# Skill: Troubleshoot Database Issues
-
-## Purpose
-Diagnose and resolve common database performance and operational issues using structured investigation methodology.
 
 ## Workflow
 
@@ -37,7 +33,7 @@ JOIN pg_stat_activity blocking ON blocking.pid = l.pid
 WHERE NOT bl.granted;
 
 -- Table bloat
-SELECT schemaname, relname, n_live_tup, n_dead_tup, 
+SELECT schemaname, relname, n_live_tup, n_dead_tup,
        round(n_dead_tup::numeric / greatest(n_live_tup, 1) * 100, 1) AS dead_pct
 FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;
 

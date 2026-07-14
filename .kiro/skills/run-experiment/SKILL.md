@@ -1,11 +1,7 @@
 ---
-inclusion: manual
+name: run-experiment
+description: Guide through running a specific benchmark experiment from start to finish, including infrastructure setup, execution, result collection, and interpretation. Use when running database benchmarks or experiments.
 ---
-
-# Skill: Run a Database Experiment
-
-## Purpose
-Guide the user through running a specific benchmark experiment from start to finish, including infrastructure setup, execution, result collection, and interpretation.
 
 ## Workflow
 

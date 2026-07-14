@@ -1,11 +1,7 @@
 ---
-inclusion: manual
+name: compare-databases
+description: Help choose the right database for a specific production use case by mapping requirements to database characteristics and citing lab benchmark data. Use when comparing databases or making technology selection decisions.
 ---
-
-# Skill: Compare Databases for a Use Case
-
-## Purpose
-Help the user choose the right database for their specific production use case by mapping requirements to database characteristics and citing lab benchmark data.
 
 ## Workflow
 

@@ -1,23 +1,23 @@
 # Database Lab Benchmark
 
-Comprehensive benchmark suite for comparing **16 databases** across different storage engines, topologies, and use cases. Prove or disprove vendor claims with real data.
+Comprehensive benchmark suite for comparing **19 databases** across different storage engines, topologies, and use cases. Prove or disprove vendor claims with real data.
 
 ## 🎯 Goal
 
-Validate vendor claims (hypotheses H1–H77) with reproducible benchmark data across five storage engine families:
+Validate vendor claims (hypotheses H1–H91) with reproducible benchmark data across six storage engine families:
 
 | Family | Databases | Storage Model |
 |--------|-----------|---------------|
 | **B-Tree** | PostgreSQL 16, MySQL 8.0, MongoDB 7 (WiredTiger), SQLite | Sorted pages, in-place updates |
 | **LSM-Tree** | ScyllaDB 5.4, Cassandra 4.1, CockroachDB (Pebble) | Memtable → SSTable flush, compaction |
 | **Columnar** | ClickHouse | Column-oriented, MergeTree family |
-| **Time-Series** | TimescaleDB, InfluxDB 2.7 | Hypertables / TSM engine |
+| **Time-Series** | TimescaleDB, InfluxDB 2.7, Prometheus 2.53 | Hypertables / TSM / TSDB |
 | **In-Memory** | Redis 7, Valkey 7.2, DragonflyDB | Hash table, optional persistence |
-| **Specialized** | Elasticsearch (Inverted Index), Neo4j (Graph), Milvus (Vector) | Domain-optimized |
+| **Specialized** | Elasticsearch (Inverted Index), Neo4j (Graph), Milvus (Vector), Qdrant (Vector), pgvector (PG Vector) | Domain-optimized |
 
 ## 📊 Benchmark Workloads (Go)
 
-All 16 databases run the same standardized benchmark:
+All 19 databases run the same standardized benchmark:
 
 | Workload | Description | Key Metric |
 |----------|-------------|------------|
@@ -27,8 +27,8 @@ All 16 databases run the same standardized benchmark:
 
 ```bash
 cd benchmarks/go
-go run . write    # Write throughput for all 16 DBs
-go run . read     # Read latency for all 16 DBs
+go run . write    # Write throughput for all 19 DBs
+go run . read     # Read latency for all 19 DBs
 go run . mixed    # Mixed workload (80/20)
 go run . all      # Run all benchmarks
 
@@ -55,27 +55,30 @@ BENCH_ROWS=1000000 BENCH_CONCURRENCY=50 go run . all
 | Elasticsearch | ✅ | — | ✅ 3-node cluster | — | Shard distribution |
 | Neo4j | ✅ | — | ✅ 3 Core + Reader | — | Raft consensus |
 | InfluxDB | ✅ | ❌ OSS only | ❌ Enterprise only | — | Single-node limitation |
+| Prometheus | ✅ | — | ❌ Use Thanos/Mimir | — | Monitoring TSDB |
 | Milvus | ✅ | — | ✅ Distributed | — | Separated compute/storage |
+| Qdrant | ✅ | — | ✅ 3-node (Raft) | — | Rust vector DB |
+| pgvector | ✅ | (inherits PG) | — | — | PG extension for vectors |
 | SQLite | ✅ | — | — | — | Embedded, no server |
 
 ## 📋 Experiments & Hypotheses
 
 | # | Experiment | Databases | Validates |
 |---|------------|-----------|-----------|
-| 1 | Write Throughput | All 16 | H1, H5, H17, H53, H61, H66, H72, H74, H75 |
-| 2 | Read Latency | All 16 | H3, H13, H52, H54, H62, H67, H70, H74, H76 |
+| 1 | Write Throughput | All 19 | H1, H5, H17, H53, H61, H66, H72, H74, H75, H83 |
+| 2 | Read Latency | All 19 | H3, H13, H52, H54, H62, H67, H70, H74, H76, H78, H88 |
 | 3 | Complex Query | PG, MySQL, Mongo, CockroachDB | H1, H9, H58, H59 |
 | 4 | Schema Evolution | PG, MySQL, Mongo, Scylla | H9, H24, H26 |
-| 5 | Horizontal Scaling | Scylla, Mongo, CockroachDB, CH | H7, H28, H48, H57 |
+| 5 | Horizontal Scaling | Scylla, Mongo, CockroachDB, CH, Qdrant | H7, H28, H48, H57, H82 |
 | 6 | Write Amplification | PG, Scylla, Cassandra | H19 |
-| 7 | Time-Series Ingest | Timescale, InfluxDB, Scylla, CH | H6, H40, H53, H54 |
+| 7 | Time-Series Ingest | Timescale, InfluxDB, Prometheus, Scylla, CH | H6, H40, H53, H54, H83-H86 |
 | 8 | MySQL vs PostgreSQL | MySQL, PG | H21-H25 |
 | 9 | MongoDB vs SQL | Mongo, PG, MySQL | H26-H30 |
 | 10 | OLAP Analytics | ClickHouse, PG, TimescaleDB | H36-H39 |
-| 11 | Time-Series Battle | Timescale, InfluxDB, Mongo TS, CH | H40-H43, H53-H56 |
+| 11 | Time-Series Battle | Timescale, InfluxDB, Prometheus, Mongo TS, CH | H40-H43, H53-H56, H83-H86 |
 | 12 | In-Memory Battle | Redis vs Valkey vs DragonflyDB | H61-H69 |
 | 13 | Graph Traversal | Neo4j vs PG (recursive CTE) | H49-H52 |
-| 14 | Vector Search | Milvus (HNSW vs FLAT) | H70-H73 |
+| 14 | Vector Search | Milvus vs Qdrant vs pgvector | H70-H73, H78-H82, H87-H91 |
 | 15 | Full-Text Search | Elasticsearch vs PG tsvector | H44-H48 |
 | 16 | Distributed SQL | CockroachDB vs PG (latency cost) | H57-H60 |
 
@@ -136,8 +139,8 @@ ssh ubuntu@<ip>
 ```
 database-lab-benchmark/
 ├── benchmarks/
-│   ├── go/                   # Go benchmark runner (all 16 DBs)
-│   │   ├── bench/            # Drivers: driver_postgres.go, driver_redis.go, etc.
+│   ├── go/                   # Go benchmark runner (all 19 DBs)
+│   │   ├── bench/            # Drivers: driver_postgres.go, driver_qdrant.go, etc.
 │   │   └── main.go           # CLI: write, read, mixed, all, list
 │   └── write-throughput/     # Python LSM-tree benchmarks
 ├── docker/                   # Docker Compose per database
@@ -155,10 +158,13 @@ database-lab-benchmark/
 │   ├── elasticsearch/        # docker-compose.yml, cluster.yml
 │   ├── neo4j/                # docker-compose.yml, cluster.yml
 │   ├── influxdb/             # docker-compose.yml (OSS: no clustering)
+│   ├── prometheus/           # docker-compose.yml (single-node TSDB)
 │   ├── milvus/               # docker-compose.yml, cluster.yml
+│   ├── qdrant/               # docker-compose.yml, cluster.yml
+│   ├── pgvector/             # docker-compose.yml (PG + vector extension)
 │   └── sqlite/               # README.md (embedded, no Docker needed)
 ├── docs/
-│   ├── official-references/  # Vendor claims & config per DB
+│   ├── official-references/  # Vendor claims & config per DB (19 files)
 │   ├── REPLICATION.md
 │   ├── BACKUP.md
 │   └── POOLING.md
@@ -166,7 +172,7 @@ database-lab-benchmark/
 └── scripts/                  # Orchestration
 ```
 
-## 📋 Key Hypotheses (H1–H77)
+## 📋 Key Hypotheses (H1–H91)
 
 | ID | Claim | Source | How We Test |
 |----|-------|--------|-------------|
@@ -185,19 +191,91 @@ database-lab-benchmark/
 | H66 | Valkey same perf as Redis | valkey.io | Exp 12: Drop-in comparison |
 | H70 | Milvus ms-level vector search | milvus.io | Exp 14: ANN search |
 | H74 | SQLite fastest single-process reads | sqlite.org | Exp 2: In-process vs network |
+| H78 | Qdrant highest RPS among vector DBs | qdrant.tech | Exp 14: Vector DB battle |
+| H83 | Prometheus 2M+ samples/sec ingest | prometheus.io | Exp 7: Remote write throughput |
+| H87 | pgvector 2,300 QPS with HNSW | github.com/pgvector | Exp 14: PG vector search |
 
 Full hypothesis list in `docs/official-references/`.
 
-## 🔬 Previous Results
+## 🔬 Benchmark Results
 
-From local benchmark (June 2026):
+### Experiment 12: In-Memory Battle (July 14, 2026)
 
-| Metric | PostgreSQL | ScyllaDB | Ratio |
-|--------|------------|----------|-------|
-| Write TPS | 1,920 | 9,751 | 5.1x |
-| Write Latency | 2.08ms | 0.4ms | 5.2x |
-| Read TPS | 14,877 | 11,976 | 0.8x |
-| Write Amplification | 1.6x | 9.2x | 5.8x |
+**Setup**: AWS EC2 m6i.2xlarge (spot), ap-southeast-3 (Jakarta), 8 vCPU / 32GB RAM
+**Config**: 10K rows, 10 goroutines, 100B values, 1 run (light mode)
+
+| Workload | Redis 7 | Valkey 7.2 | DragonflyDB | Winner |
+|----------|---------|------------|-------------|--------|
+| **Write throughput** | 61,482 ops/s | **63,175 ops/s** | 58,997 ops/s | Valkey |
+| **Read latency** | **63,459 ops/s** | 63,051 ops/s | 60,358 ops/s | Redis |
+| **Mixed 80/20** | 63,623 ops/s | **64,475 ops/s** | 61,533 ops/s | Valkey |
+
+**Latency (all workloads)**:
+| Metric | Redis | Valkey | DragonflyDB |
+|--------|-------|--------|-------------|
+| p50 | 0.15ms | 0.15ms | 0.16ms |
+| p95 | 0.22-0.23ms | 0.22-0.23ms | 0.24-0.25ms |
+| p99 | 0.26-0.28ms | 0.26-0.29ms | 0.29-0.31ms |
+
+**Hypothesis Validation**:
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| H13 | Redis sub-millisecond latency | ✅ Confirmed (p99 = 0.28ms) |
+| H66 | Valkey same performance as Redis | ✅ Confirmed (within 3%, sometimes faster) |
+| H67 | Valkey sub-millisecond latency | ✅ Confirmed (p99 = 0.29ms) |
+| H61 | DragonflyDB 25x throughput vs Redis | ❌ Not observed at 10 concurrency / 2 CPU |
+| H62 | DragonflyDB sub-millisecond p99 | ✅ Confirmed (p99 = 0.31ms) |
+
+**Key Insight**: At low concurrency (10 goroutines) and limited CPU (2 cores), DragonflyDB's multi-threaded advantage doesn't manifest. Its shard-per-core architecture needs higher concurrency (50+ threads) to outperform Redis's single-threaded model. Re-test with `BENCH_CONCURRENCY=50` on a 4+ CPU instance to validate H61.
+
+### Experiment 12b: High Concurrency H61 Validation (July 14, 2026)
+
+**Setup**: AWS EC2 m6i.2xlarge (on-demand), ap-southeast-3, 8 vCPU / 32GB RAM
+**Config**: 100K rows, **50 goroutines**, 100B values, 3 runs (median)
+
+| Workload | Redis 7 | Valkey 7.2 | DragonflyDB | Dragonfly vs Redis |
+|----------|---------|------------|-------------|-----|
+| **Write** | 95,858 ops/s | 98,079 ops/s | **115,795 ops/s** | **1.21x** |
+| **Read** | 98,869 ops/s | 100,970 ops/s | **121,314 ops/s** | **1.23x** |
+| **Mixed 80/20** | 98,319 ops/s | 99,878 ops/s | **119,139 ops/s** | **1.21x** |
+
+| Metric | Redis | Valkey | DragonflyDB |
+|--------|-------|--------|-------------|
+| p50 | 0.49-0.51ms | 0.48-0.50ms | **0.38-0.39ms** |
+| p95 | 0.74-0.76ms | 0.72-0.74ms | 0.73-0.75ms |
+| p99 | 0.92-0.96ms | 0.88-0.91ms | 0.95-0.99ms |
+
+**H61 Verdict**: DragonflyDB is **~1.2x faster** on 2 proactor threads / 50 clients. The official "25x" claim requires 64-core machines. However, DragonflyDB shows clear **p50 latency advantage** (25% lower than Redis) even at moderate concurrency, proving multi-threading helps median performance.
+
+### Experiment 8: MySQL vs PostgreSQL (July 14, 2026)
+
+**Setup**: Same instance (m6i.2xlarge on-demand, ap-southeast-3)
+**Config**: 100K rows, 50 goroutines, 100B values, 3 runs (median)
+
+| Workload | PostgreSQL 16 | MySQL 8.0 | Winner |
+|----------|--------------|-----------|--------|
+| **Write throughput** | 4,194 ops/s | **6,410 ops/s** | MySQL (1.53x) |
+| **Read throughput** | **28,589 ops/s** | 17,833 ops/s | PostgreSQL (1.60x) |
+| **Mixed 80/20** | 17,418 ops/s | 16,886 ops/s | ~Equal |
+
+| Metric | PostgreSQL | MySQL |
+|--------|-----------|-------|
+| Write p50 | 11.86ms | **6.28ms** |
+| Write p99 | **12.75ms** | 28.52ms |
+| Read p50 | **1.34ms** | 1.37ms |
+| Read p99 | 23.92ms | **50.70ms** |
+| Mixed p50 | 2.71ms | **1.39ms** |
+| Mixed p99 | **5.05ms** | 52.18ms |
+
+**Hypothesis Validation**:
+| Hypothesis | Claim | Result |
+|------------|-------|--------|
+| H1 | PostgreSQL best for complex OLTP | ✅ Read throughput 1.6x faster |
+| H3 | PostgreSQL <5ms p99 read | ❌ p99=23.9ms (high concurrency outliers) |
+| H21 | MySQL best for web apps (simple writes) | ✅ Write throughput 1.53x faster |
+| H22 | MySQL simple OLTP fast | ✅ Lower p50 for writes |
+
+**Key Insight**: MySQL dominates **write throughput** (InnoDB buffering efficient for upserts), while PostgreSQL dominates **read throughput** (pgx connection pool + MVCC efficient for concurrent reads). However, MySQL shows **terrible p99 tail latency** (28-52ms) compared to PostgreSQL's more **predictable** latency distribution. PostgreSQL has tighter p50-p95 spread despite higher median write latency.
 
 ## 📖 References
 
@@ -212,9 +290,12 @@ From local benchmark (June 2026):
 - [CockroachDB Docs](https://cockroachlabs.com/docs/)
 - [TimescaleDB Docs](https://docs.timescale.com/)
 - [InfluxDB Docs](https://docs.influxdata.com/)
+- [Prometheus Docs](https://prometheus.io/docs/)
 - [DragonflyDB Docs](https://dragonflydb.io/docs)
 - [Valkey Docs](https://valkey.io/docs/)
 - [Milvus Docs](https://milvus.io/docs)
+- [Qdrant Docs](https://qdrant.tech/documentation/)
+- [pgvector](https://github.com/pgvector/pgvector)
 - [SQLite Docs](https://sqlite.org/docs.html)
 
 ## License

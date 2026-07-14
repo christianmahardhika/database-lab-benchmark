@@ -1,11 +1,7 @@
 ---
-inclusion: manual
+name: production-readiness-review
+description: Evaluate whether a database deployment is ready for production traffic by checking against a comprehensive maturity checklist. Use when preparing a database for production launch or auditing existing deployments.
 ---
-
-# Skill: Production Readiness Review
-
-## Purpose
-Evaluate whether a database deployment is ready for production traffic by checking against a comprehensive maturity checklist.
 
 ## Workflow
 
