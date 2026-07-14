@@ -82,6 +82,48 @@ BENCH_ROWS=1000000 BENCH_CONCURRENCY=50 go run . all
 | 15 | Full-Text Search | OpenSearch vs PG tsvector | H44-H48 |
 | 16 | Distributed SQL | CockroachDB vs PG (latency cost) | H57-H60 |
 
+### DDIA & Database Internals — Deep Experiments
+
+| # | Experiment | Databases | Category | Validates |
+|---|------------|-----------|----------|-----------|
+| WA-01 | Write Amplification Ratio | PG, MySQL, ScyllaDB, Cassandra | Storage Engine | disk_bytes / logical_bytes |
+| WA-02 | WAL/Binlog Growth | PG, MySQL, MongoDB | Storage Engine | MB/s WAL growth |
+| WA-03 | Compaction I/O | ScyllaDB, Cassandra | Storage Engine | IOPS during compaction |
+| RA-01 | Read Amplification (key exists) | All | Storage Engine | IOPS per read |
+| RA-02 | Negative Lookup (key not exists) | ScyllaDB, Cassandra | Storage Engine | Bloom filter efficiency |
+| RUM-01 | RUM Triangle Plot | All 19 | Storage Engine | R/U/M radar chart |
+| BT-01 | Page Split Frequency | PG, MySQL | B-Tree | Splits/1000 inserts |
+| BT-02 | Page Split Latency Spike | PG, MySQL | B-Tree | p99 during splits |
+| BT-03 | Fillfactor Impact | PG | B-Tree | Split reduction % |
+| BT-04 | Tree Depth at Scale | PG, MySQL | B-Tree | Depth at 1M/10M/100M rows |
+| LSM-01 | Compaction Latency Spike | ScyllaDB, Cassandra | LSM-Tree | p99 read during compaction |
+| LSM-02 | Compaction I/O Saturation | ScyllaDB, Cassandra | LSM-Tree | IOPS % used |
+| LSM-03 | Level Fanout Strategies | ScyllaDB | LSM-Tree | Throughput stability |
+| LSM-05 | Space Amplification | ScyllaDB, Cassandra | LSM-Tree | Actual vs logical ratio |
+| DM-01 | Document Locality | MongoDB, PG (JSONB) | Data Model | Partial vs full read latency |
+| DM-02 | JOIN at Scale | PG, MySQL, CockroachDB | Data Model | 2/3/5-table JOIN latency |
+| GR-01 | Depth-1 Traversal | Neo4j, PG | Graph | Direct neighbor latency |
+| GR-02 | Depth-3 Traversal | Neo4j, PG | Graph | 3-hop latency |
+| REP-01 | Replication Lag (sync) | PG, MySQL (semisync) | Replication | ms write→replica visible |
+| REP-02 | Replication Lag (async) | PG, MongoDB | Replication | Eventual consistency time |
+| CON-01 | Leader Election Time | CockroachDB, Neo4j | Consensus | Failover duration (ms) |
+| CON-02 | Consensus Round-Trip | CockroachDB (Raft) | Consensus | Write latency overhead |
+| BAT-01 | Bulk Insert (COPY) | PG, MySQL, ClickHouse | Batch | rows/sec via bulk loader |
+| BAT-02 | Batch vs Single Insert | All | Batch | Throughput ratio |
+| TS-01 | Tumbling Window Aggregate | TimescaleDB, InfluxDB, CH | Time-Series | 5-min agg latency |
+| TS-02 | Sliding Window | TimescaleDB, InfluxDB | Time-Series | Moving average latency |
+| DIST-01 | Hot Key / Skewed Writes | Redis Cluster, Cassandra | Distributed | Hotspot node CPU |
+| DIST-02 | Zipfian Distribution | All distributed | Distributed | Throughput degradation |
+| PART-01 | Hash vs Range Partition | CockroachDB, Cassandra | Distributed | Query latency |
+| PART-02 | Cross-Partition Query | CockroachDB, ScyllaDB | Distributed | Scatter-gather overhead |
+| MEM-01 | Cold vs Hot Cache | PG, MySQL | In-Memory | First vs subsequent read |
+| MEM-02 | Memory Pressure | Redis, DragonflyDB | In-Memory | Throughput at 80%/90%/100% mem |
+| MEM-03 | Persistence Overhead | Redis, Valkey | In-Memory | AOF vs none write latency |
+| VEC-01 | Recall vs Latency | Milvus, Qdrant, pgvector | Vector | recall@10 at target latency |
+| VEC-02 | Index Build Time | Milvus, Qdrant, pgvector | Vector | HNSW build on 1M vectors |
+| VEC-03 | Dimension Scaling | All vector DBs | Vector | 128 vs 768 vs 1536 dim |
+| VEC-04 | Hybrid Search | Milvus, Qdrant | Vector | Vector + metadata filter |
+
 ## 🚀 Quick Start
 
 ### Option A: Go Benchmark (Recommended)
