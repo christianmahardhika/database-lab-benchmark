@@ -206,9 +206,9 @@ exp15_fulltext() {
   echo "══════════════════════════════════════════════════════════════"
   echo "  Experiment 15: Full-Text Search (~5 min)"
   echo "══════════════════════════════════════════════════════════════"
-  local dbs=("elasticsearch:docker-compose.yml" "postgres:docker-compose.yml")
+  local dbs=("opensearch:docker-compose.yml" "postgres:docker-compose.yml")
   start_dbs "${dbs[@]}"
-  run_bench "all" "elasticsearch,postgres"
+  run_bench "all" "opensearch,postgres"
   stop_dbs "${dbs[@]}"
   save_checkpoint "exp15"
 }

@@ -1,101 +1,112 @@
-# MongoDB Sharded Cluster Lab
+# MongoDB Sharded Cluster (2 shards + config servers + mongos)
 # Based on: https://www.mongodb.com/docs/manual/sharding/
-# Architecture: 2 shards (each replica set) + config servers + mongos router
 
 services:
-  # Config Server Replica Set (3 nodes)
-  config1:
+  # Config Server Replica Set
+  configsvr1:
     image: mongo:7.0
-    container_name: mongo-config1
-    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    container_name: bench-configsvr1
+    command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
-      - config1-data:/data/db
-    networks:
-      - mongo-shard-net
+      - configsvr1_data:/data/configdb
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1"
 
-  config2:
+  configsvr2:
     image: mongo:7.0
-    container_name: mongo-config2
-    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    container_name: bench-configsvr2
+    command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
-      - config2-data:/data/db
-    networks:
-      - mongo-shard-net
+      - configsvr2_data:/data/configdb
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1"
 
-  config3:
+  configsvr3:
     image: mongo:7.0
-    container_name: mongo-config3
-    command: mongod --configsvr --replSet configRS --bind_ip_all --port 27017
+    container_name: bench-configsvr3
+    command: mongod --configsvr --replSet configrs --bind_ip_all --port 27019
     volumes:
-      - config3-data:/data/db
-    networks:
-      - mongo-shard-net
+      - configsvr3_data:/data/configdb
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1"
 
-  # Shard 1 Replica Set (Primary + Secondary)
-  shard1-primary:
+  # Shard 1 (single node for simplicity)
+  shard1:
     image: mongo:7.0
-    container_name: mongo-shard1-primary
-    command: mongod --shardsvr --replSet shard1RS --bind_ip_all --port 27017
+    container_name: bench-shard1
+    command: mongod --shardsvr --replSet shard1rs --bind_ip_all --port 27018
     volumes:
-      - shard1-primary-data:/data/db
-    networks:
-      - mongo-shard-net
+      - shard1_data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
-  shard1-secondary:
+  # Shard 2 (single node for simplicity)
+  shard2:
     image: mongo:7.0
-    container_name: mongo-shard1-secondary
-    command: mongod --shardsvr --replSet shard1RS --bind_ip_all --port 27017
+    container_name: bench-shard2
+    command: mongod --shardsvr --replSet shard2rs --bind_ip_all --port 27018
     volumes:
-      - shard1-secondary-data:/data/db
-    networks:
-      - mongo-shard-net
-
-  # Shard 2 Replica Set (Primary + Secondary)
-  shard2-primary:
-    image: mongo:7.0
-    container_name: mongo-shard2-primary
-    command: mongod --shardsvr --replSet shard2RS --bind_ip_all --port 27017
-    volumes:
-      - shard2-primary-data:/data/db
-    networks:
-      - mongo-shard-net
-
-  shard2-secondary:
-    image: mongo:7.0
-    container_name: mongo-shard2-secondary
-    command: mongod --shardsvr --replSet shard2RS --bind_ip_all --port 27017
-    volumes:
-      - shard2-secondary-data:/data/db
-    networks:
-      - mongo-shard-net
+      - shard2_data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
   # Mongos Router
   mongos:
     image: mongo:7.0
-    container_name: mongo-router
-    command: mongos --configdb configRS/config1:27017,config2:27017,config3:27017 --bind_ip_all --port 27017
+    container_name: bench-mongos
+    command: mongos --configdb configrs/configsvr1:27019,configsvr2:27019,configsvr3:27019 --bind_ip_all --port 27017
     ports:
-      - "27020:27017"
+      - "27017:27017"
     depends_on:
-      - config1
-      - config2
-      - config3
-      - shard1-primary
-      - shard1-secondary
-      - shard2-primary
-      - shard2-secondary
-    networks:
-      - mongo-shard-net
+      - configsvr1
+      - configsvr2
+      - configsvr3
+      - shard1
+      - shard2
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1"
+
+  # Initialization container
+  mongo-init:
+    image: mongo:7.0
+    container_name: mongo-shard-init
+    depends_on:
+      - mongos
+    command: >
+      bash -c "
+        sleep 30;
+        mongosh --host configsvr1:27019 --eval 'rs.initiate({_id:\"configrs\",configsvr:true,members:[{_id:0,host:\"configsvr1:27019\"},{_id:1,host:\"configsvr2:27019\"},{_id:2,host:\"configsvr3:27019\"}]})';
+        sleep 5;
+        mongosh --host shard1:27018 --eval 'rs.initiate({_id:\"shard1rs\",members:[{_id:0,host:\"shard1:27018\"}]})';
+        mongosh --host shard2:27018 --eval 'rs.initiate({_id:\"shard2rs\",members:[{_id:0,host:\"shard2:27018\"}]})';
+        sleep 10;
+        mongosh --host mongos:27017 --eval 'sh.addShard(\"shard1rs/shard1:27018\")';
+        mongosh --host mongos:27017 --eval 'sh.addShard(\"shard2rs/shard2:27018\")';
+        echo 'Sharding setup complete';
+      "
+    restart: "no"
 
 volumes:
-  config1-data:
-  config2-data:
-  config3-data:
-  shard1-primary-data:
-  shard1-secondary-data:
-  shard2-primary-data:
-  shard2-secondary-data:
-
-networks:
-  mongo-shard-net:
-    driver: bridge
+  configsvr1_data:
+  configsvr2_data:
+  configsvr3_data:
+  shard1_data:
+  shard2_data:

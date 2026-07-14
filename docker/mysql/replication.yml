@@ -1,63 +1,79 @@
-# MySQL GTID-based Replication Lab
+# MySQL Source-Replica Replication
 # Based on: https://dev.mysql.com/doc/refman/8.0/en/replication.html
 
 services:
   mysql-source:
     image: mysql:8.0
-    container_name: mysql-source
+    container_name: bench-mysql-source
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: testdb
-    command:
-      - --server-id=1
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --log-replica-updates=ON
-      - --binlog-expire-logs-seconds=604800
-    volumes:
-      - mysql-source-data:/var/lib/mysql
-      - ./init-source.sql:/docker-entrypoint-initdb.d/init-source.sql
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+      MYSQL_DATABASE: benchmark
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_source_data:/var/lib/mysql
+      - ./init-source.sql:/docker-entrypoint-initdb.d/init-source.sql
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --innodb-buffer-pool-size=512M
+      --max-connections=200
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ubench", "-pbench"]
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - mysql-net
 
   mysql-replica:
     image: mysql:8.0
-    container_name: mysql-replica
+    container_name: bench-mysql-replica
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-    command:
-      - --server-id=2
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --log-replica-updates=ON
-      - --read-only=ON
-      - --super-read-only=ON
-    volumes:
-      - mysql-replica-data:/var/lib/mysql
-      - ./init-replica.sql:/docker-entrypoint-initdb.d/init-replica.sql
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
     ports:
       - "3307:3306"
+    volumes:
+      - mysql_replica_data:/var/lib/mysql
+      - ./init-replica.sql:/docker-entrypoint-initdb.d/init-replica.sql
+    command: >
+      --server-id=2
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --read-only=ON
+      --super-read-only=ON
+      --innodb-buffer-pool-size=512M
     depends_on:
       mysql-source:
         condition: service_healthy
-    networks:
-      - mysql-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
 volumes:
-  mysql-source-data:
-  mysql-replica-data:
+  mysql_source_data:
+  mysql_replica_data:
 
-networks:
-  mysql-net:
-    driver: bridge
+# Post-setup: Configure replica
+# docker exec -it bench-mysql-replica mysql -uroot -pbench -e "
+#   CHANGE REPLICATION SOURCE TO
+#     SOURCE_HOST='mysql-source',
+#     SOURCE_USER='replicator',
+#     SOURCE_PASSWORD='replicator',
+#     SOURCE_AUTO_POSITION=1;
+#   START REPLICA;
+# "

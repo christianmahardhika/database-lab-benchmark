@@ -1,87 +1,140 @@
-# MySQL Group Replication Lab (Multi-Primary)
-# GR config via SQL after startup (can't set during init)
+# MySQL Group Replication (3 nodes)
+# Based on: https://dev.mysql.com/doc/refman/8.0/en/group-replication.html
 
 services:
   mysql-gr-1:
     image: mysql:8.0
-    container_name: mysql-gr-1
+    container_name: bench-mysql-gr-1
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: testdb
-    command:
-      - --server-id=1
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --log-replica-updates=ON
-      - --binlog-checksum=NONE
-      - --report-host=mysql-gr-1
-    volumes:
-      - mysql-gr-1-data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+      MYSQL_DATABASE: benchmark
     ports:
-      - "3310:3306"
-    networks:
-      - mysql-gr-net
+      - "3306:3306"
+      - "33061:33061"
+    volumes:
+      - mysql_gr1_data:/var/lib/mysql
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --log-slave-updates=ON
+      --binlog-checksum=NONE
+      --master-info-repository=TABLE
+      --relay-log-info-repository=TABLE
+      --transaction-write-set-extraction=XXHASH64
+      --plugin-load-add=group_replication.so
+      --group-replication-group-name=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+      --group-replication-start-on-boot=OFF
+      --group-replication-local-address=mysql-gr-1:33061
+      --group-replication-group-seeds=mysql-gr-1:33061,mysql-gr-2:33061,mysql-gr-3:33061
+      --group-replication-bootstrap-group=OFF
+      --report-host=mysql-gr-1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
-      interval: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ubench", "-pbench"]
+      interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 10
 
   mysql-gr-2:
     image: mysql:8.0
-    container_name: mysql-gr-2
+    container_name: bench-mysql-gr-2
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-    command:
-      - --server-id=2
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --log-replica-updates=ON
-      - --binlog-checksum=NONE
-      - --report-host=mysql-gr-2
-    volumes:
-      - mysql-gr-2-data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+      MYSQL_DATABASE: benchmark
     ports:
-      - "3311:3306"
+      - "3307:3306"
+      - "33062:33061"
+    volumes:
+      - mysql_gr2_data:/var/lib/mysql
+    command: >
+      --server-id=2
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --log-slave-updates=ON
+      --binlog-checksum=NONE
+      --master-info-repository=TABLE
+      --relay-log-info-repository=TABLE
+      --transaction-write-set-extraction=XXHASH64
+      --plugin-load-add=group_replication.so
+      --group-replication-group-name=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+      --group-replication-start-on-boot=OFF
+      --group-replication-local-address=mysql-gr-2:33061
+      --group-replication-group-seeds=mysql-gr-1:33061,mysql-gr-2:33061,mysql-gr-3:33061
+      --group-replication-bootstrap-group=OFF
+      --report-host=mysql-gr-2
     depends_on:
       mysql-gr-1:
         condition: service_healthy
-    networks:
-      - mysql-gr-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
   mysql-gr-3:
     image: mysql:8.0
-    container_name: mysql-gr-3
+    container_name: bench-mysql-gr-3
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-    command:
-      - --server-id=3
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --log-replica-updates=ON
-      - --binlog-checksum=NONE
-      - --report-host=mysql-gr-3
-    volumes:
-      - mysql-gr-3-data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_USER: bench
+      MYSQL_PASSWORD: bench
+      MYSQL_DATABASE: benchmark
     ports:
-      - "3312:3306"
+      - "3308:3306"
+      - "33063:33061"
+    volumes:
+      - mysql_gr3_data:/var/lib/mysql
+    command: >
+      --server-id=3
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+      --log-slave-updates=ON
+      --binlog-checksum=NONE
+      --master-info-repository=TABLE
+      --relay-log-info-repository=TABLE
+      --transaction-write-set-extraction=XXHASH64
+      --plugin-load-add=group_replication.so
+      --group-replication-group-name=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+      --group-replication-start-on-boot=OFF
+      --group-replication-local-address=mysql-gr-3:33061
+      --group-replication-group-seeds=mysql-gr-1:33061,mysql-gr-2:33061,mysql-gr-3:33061
+      --group-replication-bootstrap-group=OFF
+      --report-host=mysql-gr-3
     depends_on:
       mysql-gr-1:
         condition: service_healthy
-    networks:
-      - mysql-gr-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
 volumes:
-  mysql-gr-1-data:
-  mysql-gr-2-data:
-  mysql-gr-3-data:
+  mysql_gr1_data:
+  mysql_gr2_data:
+  mysql_gr3_data:
 
-networks:
-  mysql-gr-net:
-    driver: bridge
+# Post-setup: Bootstrap the group on node 1
+# docker exec -it bench-mysql-gr-1 mysql -ubench -pbench -e "
+#   SET GLOBAL group_replication_bootstrap_group=ON;
+#   START GROUP_REPLICATION;
+#   SET GLOBAL group_replication_bootstrap_group=OFF;
+# "
+# Then on nodes 2 and 3:
+# docker exec -it bench-mysql-gr-2 mysql -ubench -pbench -e "START GROUP_REPLICATION;"
+# docker exec -it bench-mysql-gr-3 mysql -ubench -pbench -e "START GROUP_REPLICATION;"

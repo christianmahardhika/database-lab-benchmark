@@ -1,79 +1,66 @@
-# PostgreSQL Streaming Replication Lab
+# PostgreSQL Streaming Replication (Primary + Standby)
 # Based on: https://www.postgresql.org/docs/current/warm-standby.html
 
 services:
-  pg-primary:
+  postgres-primary:
     image: postgres:16-alpine
-    container_name: pg-primary
+    container_name: bench-postgres-primary
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: testdb
-    command: |
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: benchmark
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh
+    command: >
       postgres
       -c wal_level=replica
       -c max_wal_senders=3
       -c max_replication_slots=3
       -c hot_standby=on
-      -c archive_mode=on
-      -c archive_command='cp %p /var/lib/postgresql/archive/%f'
-    volumes:
-      - pg-primary-data:/var/lib/postgresql/data
-      - pg-archive:/var/lib/postgresql/archive
-      - ./init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh
-    ports:
-      - "5438:5432"
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U bench"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - pg-net
 
-  pg-replica:
+  postgres-standby:
     image: postgres:16-alpine
-    container_name: pg-replica
+    container_name: bench-postgres-standby
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGPASSWORD: replicator_pass
-    command: |
-      bash -c "
-        # Wait for primary to be ready
-        until pg_isready -h pg-primary -U postgres; do
-          echo 'Waiting for primary...'
-          sleep 2
-        done
-        
-        # Remove any existing data
-        rm -rf /var/lib/postgresql/data/*
-        
-        # Take base backup from primary
-        PGPASSWORD=replicator_pass pg_basebackup -h pg-primary -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R
-        
-        # Fix ownership and permissions
-        chown -R postgres:postgres /var/lib/postgresql/data
-        chmod 0700 /var/lib/postgresql/data
-        
-        # Start postgres as postgres user
-        exec su-exec postgres postgres
-      "
-    volumes:
-      - pg-replica-data:/var/lib/postgresql/data
+      PGUSER: replicator
+      PGPASSWORD: replicator
     ports:
-      - "5434:5432"
+      - "5433:5432"
+    volumes:
+      - postgres_standby_data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        until pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -Fp -Xs -P -R; do
+          echo 'Waiting for primary...';
+          sleep 5;
+        done;
+        chmod 700 /var/lib/postgresql/data;
+        postgres
+      "
     depends_on:
-      pg-primary:
+      postgres-primary:
         condition: service_healthy
-    networks:
-      - pg-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
 
 volumes:
-  pg-primary-data:
-  pg-replica-data:
-  pg-archive:
-
-networks:
-  pg-net:
-    driver: bridge
+  postgres_primary_data:
+  postgres_standby_data:

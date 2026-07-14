@@ -13,7 +13,7 @@ Validate vendor claims (hypotheses H1–H91) with reproducible benchmark data ac
 | **Columnar** | ClickHouse | Column-oriented, MergeTree family |
 | **Time-Series** | TimescaleDB, InfluxDB 2.7, Prometheus 2.53 | Hypertables / TSM / TSDB |
 | **In-Memory** | Redis 7, Valkey 7.2, DragonflyDB | Hash table, optional persistence |
-| **Specialized** | Elasticsearch (Inverted Index), Neo4j (Graph), Milvus (Vector), Qdrant (Vector), pgvector (PG Vector) | Domain-optimized |
+| **Specialized** | OpenSearch (Inverted Index), Neo4j (Graph), Milvus (Vector), Qdrant (Vector), pgvector (PG Vector) | Domain-optimized |
 
 ## 📊 Benchmark Workloads (Go)
 
@@ -52,7 +52,7 @@ BENCH_ROWS=1000000 BENCH_CONCURRENCY=50 go run . all
 | ClickHouse | ✅ | — | ✅ 2×2 + Keeper | — | Sharded + Replicated |
 | CockroachDB | ✅ | — | ✅ 3-node Raft | — | Distributed SQL |
 | TimescaleDB | ✅ | ✅ Streaming | — | — | PG-based replication |
-| Elasticsearch | ✅ | — | ✅ 3-node cluster | — | Shard distribution |
+| OpenSearch | ✅ | — | ✅ 3-node cluster | — | Shard distribution |
 | Neo4j | ✅ | — | ✅ 3 Core + Reader | — | Raft consensus |
 | InfluxDB | ✅ | ❌ OSS only | ❌ Enterprise only | — | Single-node limitation |
 | Prometheus | ✅ | — | ❌ Use Thanos/Mimir | — | Monitoring TSDB |
@@ -79,7 +79,7 @@ BENCH_ROWS=1000000 BENCH_CONCURRENCY=50 go run . all
 | 12 | In-Memory Battle | Redis vs Valkey vs DragonflyDB | H61-H69 |
 | 13 | Graph Traversal | Neo4j vs PG (recursive CTE) | H49-H52 |
 | 14 | Vector Search | Milvus vs Qdrant vs pgvector | H70-H73, H78-H82, H87-H91 |
-| 15 | Full-Text Search | Elasticsearch vs PG tsvector | H44-H48 |
+| 15 | Full-Text Search | OpenSearch vs PG tsvector | H44-H48 |
 | 16 | Distributed SQL | CockroachDB vs PG (latency cost) | H57-H60 |
 
 ## 🚀 Quick Start
@@ -155,7 +155,7 @@ database-lab-benchmark/
 │   ├── clickhouse/           # docker-compose.yml, cluster.yml + config/
 │   ├── cockroachdb/          # docker-compose.yml, cluster.yml
 │   ├── timescaledb/          # docker-compose.yml, replication.yml
-│   ├── elasticsearch/        # docker-compose.yml, cluster.yml
+│   ├── opensearch/            # docker-compose.yml, cluster.yml
 │   ├── neo4j/                # docker-compose.yml, cluster.yml
 │   ├── influxdb/             # docker-compose.yml (OSS: no clustering)
 │   ├── prometheus/           # docker-compose.yml (single-node TSDB)
@@ -183,7 +183,7 @@ database-lab-benchmark/
 | H26 | MongoDB flexible schema, sub-ms | mongodb.com | Exp 9: Document workload |
 | H36 | ClickHouse 100M+ rows/sec scan | clickhouse.com | Exp 10: Full scan |
 | H40 | TimescaleDB 10-100x faster than PG | timescale.com | Exp 11: Time-range queries |
-| H44 | Elasticsearch near real-time search | elastic.co | Exp 15: Index + search |
+| H44 | OpenSearch near real-time search | opensearch.org | Exp 15: Index + search |
 | H49 | Neo4j constant-time traversal | neo4j.com | Exp 13: Graph vs recursive CTE |
 | H53 | InfluxDB 750K+ values/sec | influxdata.com | Exp 7: Time-series ingest |
 | H57 | CockroachDB serializable distributed | cockroachlabs.com | Exp 16: ACID + latency cost |
@@ -285,7 +285,7 @@ Full hypothesis list in `docs/official-references/`.
 - [MongoDB Docs](https://docs.mongodb.com/)
 - [Redis Docs](https://redis.io/docs/)
 - [ClickHouse Docs](https://clickhouse.com/docs/)
-- [Elasticsearch Docs](https://elastic.co/guide/)
+- [OpenSearch Docs](https://opensearch.org/docs/)
 - [Neo4j Docs](https://neo4j.com/docs/)
 - [CockroachDB Docs](https://cockroachlabs.com/docs/)
 - [TimescaleDB Docs](https://docs.timescale.com/)

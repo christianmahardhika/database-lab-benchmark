@@ -134,7 +134,7 @@ func listDatabases() {
 	fmt.Println("    clickhouse    ClickHouse            MergeTree (Columnar) :9000")
 	fmt.Println("    timescaledb   TimescaleDB           B-Tree + Hypertable  :5433")
 	fmt.Println("    cockroachdb   CockroachDB           LSM (Pebble) + Raft  :26257")
-	fmt.Println("    elasticsearch Elasticsearch 8       Inverted Index       :9200")
+	fmt.Println("    opensearch    OpenSearch 2.15       Inverted Index       :9200")
 	fmt.Println("    neo4j         Neo4j 5               Native Graph         :7687")
 	fmt.Println("    influxdb      InfluxDB 2.7          TSM (Time-Series)    :8086")
 	fmt.Println("    milvus        Milvus 2.4            HNSW (Vector)        :19530")
