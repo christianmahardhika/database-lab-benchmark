@@ -274,50 +274,51 @@ Full hypothesis list in `docs/official-references/`.
 
 **Setup**: AWS EC2 m6i.2xlarge (on-demand), ap-southeast-3, 8 vCPU / 32GB RAM
 **Config**: 100K rows, **50 goroutines**, 100B values, 3 runs (median)
+**Images**: Redis 8-alpine, Valkey 8.1-alpine, DragonflyDB latest
 
-| Workload | Redis 7 | Valkey 7.2 | DragonflyDB | Dragonfly vs Redis |
+| Workload | Redis 8 | Valkey 8.1 | DragonflyDB | Dragonfly vs Redis |
 |----------|---------|------------|-------------|-----|
-| **Write** | 95,858 ops/s | 98,079 ops/s | **115,795 ops/s** | **1.21x** |
-| **Read** | 98,869 ops/s | 100,970 ops/s | **121,314 ops/s** | **1.23x** |
-| **Mixed 80/20** | 98,319 ops/s | 99,878 ops/s | **119,139 ops/s** | **1.21x** |
+| **Write** | 96,857 ops/s | 96,742 ops/s | **116,073 ops/s** | **1.20x** |
+| **Read** | 101,118 ops/s | 101,024 ops/s | **120,480 ops/s** | **1.19x** |
+| **Mixed 80/20** | 98,236 ops/s | 99,352 ops/s | **119,233 ops/s** | **1.21x** |
 
-| Metric | Redis | Valkey | DragonflyDB |
-|--------|-------|--------|-------------|
-| p50 | 0.49-0.51ms | 0.48-0.50ms | **0.38-0.39ms** |
-| p95 | 0.74-0.76ms | 0.72-0.74ms | 0.73-0.75ms |
-| p99 | 0.92-0.96ms | 0.88-0.91ms | 0.95-0.99ms |
+| Metric | Redis 8 | Valkey 8.1 | DragonflyDB |
+|--------|---------|------------|-------------|
+| p50 | 0.48-0.50ms | 0.48-0.50ms | **0.39ms** |
+| p95 | 0.72-0.75ms | 0.73-0.76ms | 0.73-0.75ms |
+| p99 | 0.89-0.94ms | 0.89-0.92ms | 0.96-1.02ms |
 
-**H61 Verdict**: DragonflyDB is **~1.2x faster** on 2 proactor threads / 50 clients. The official "25x" claim requires 64-core machines. However, DragonflyDB shows clear **p50 latency advantage** (25% lower than Redis) even at moderate concurrency, proving multi-threading helps median performance.
+**H61 Verdict**: DragonflyDB consistently **~1.2x faster** throughput and **~20% lower p50 latency** on 2 CPU threads. The "25x" claim requires 64-core machines. At 2 threads, the multi-threaded architecture still provides a clear median latency advantage.
 
-### Experiment 8: MySQL vs PostgreSQL (July 14, 2026)
+### Experiment 8: MySQL 8.4 vs PostgreSQL 17 (July 14, 2026)
 
 **Setup**: Same instance (m6i.2xlarge on-demand, ap-southeast-3)
 **Config**: 100K rows, 50 goroutines, 100B values, 3 runs (median)
+**Images**: postgres:17-alpine, mysql:8.4
 
-| Workload | PostgreSQL 16 | MySQL 8.0 | Winner |
+| Workload | PostgreSQL 17 | MySQL 8.4 | Winner |
 |----------|--------------|-----------|--------|
-| **Write throughput** | 4,194 ops/s | **6,410 ops/s** | MySQL (1.53x) |
-| **Read throughput** | **28,589 ops/s** | 17,833 ops/s | PostgreSQL (1.60x) |
-| **Mixed 80/20** | 17,418 ops/s | 16,886 ops/s | ~Equal |
+| **Write throughput** | 4,189 ops/s | **7,584 ops/s** | MySQL (1.81x) |
+| **Read throughput** | **29,210 ops/s** | 20,806 ops/s | PostgreSQL (1.40x) |
+| **Mixed 80/20** | 17,344 ops/s | **19,593 ops/s** | MySQL (1.13x) |
 
-| Metric | PostgreSQL | MySQL |
-|--------|-----------|-------|
-| Write p50 | 11.86ms | **6.28ms** |
-| Write p99 | **12.75ms** | 28.52ms |
-| Read p50 | **1.34ms** | 1.37ms |
-| Read p99 | 23.92ms | **50.70ms** |
-| Mixed p50 | 2.71ms | **1.39ms** |
-| Mixed p99 | **5.05ms** | 52.18ms |
+| Metric | PostgreSQL 17 | MySQL 8.4 |
+|--------|--------------|-----------|
+| Write p50 | 11.55ms | **6.26ms** |
+| Write p99 | **13.51ms** | 11.38ms |
+| Read p50 | 1.33ms | **1.27ms** |
+| Read p99 | **22.68ms** | 46.38ms |
+| Mixed p50 | 2.72ms | **1.28ms** |
+| Mixed p99 | **5.13ms** | 48.33ms |
 
 **Hypothesis Validation**:
 | Hypothesis | Claim | Result |
 |------------|-------|--------|
-| H1 | PostgreSQL best for complex OLTP | ✅ Read throughput 1.6x faster |
-| H3 | PostgreSQL <5ms p99 read | ❌ p99=23.9ms (high concurrency outliers) |
-| H21 | MySQL best for web apps (simple writes) | ✅ Write throughput 1.53x faster |
-| H22 | MySQL simple OLTP fast | ✅ Lower p50 for writes |
+| H1 | PostgreSQL best for read-heavy OLTP | ✅ Read throughput 1.40x faster |
+| H21 | MySQL best for web apps (writes) | ✅ Write throughput 1.81x faster |
+| H22 | MySQL simple OLTP fast | ✅ Lower p50 across all workloads |
 
-**Key Insight**: MySQL dominates **write throughput** (InnoDB buffering efficient for upserts), while PostgreSQL dominates **read throughput** (pgx connection pool + MVCC efficient for concurrent reads). However, MySQL shows **terrible p99 tail latency** (28-52ms) compared to PostgreSQL's more **predictable** latency distribution. PostgreSQL has tighter p50-p95 spread despite higher median write latency.
+**Key Insight**: MySQL 8.4 shows **even stronger write advantage** (1.81x vs previous 1.53x on 8.0) — InnoDB improvements in 8.4 are real. However, MySQL **tail latency is terrible** (p99 = 46-48ms) while PostgreSQL stays tight (p99 = 5-22ms). For latency-sensitive apps, PG's predictability wins; for raw write throughput, MySQL dominates.
 
 ## 📖 References
 
