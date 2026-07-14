@@ -4,7 +4,6 @@ go 1.22
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
-	github.com/elastic/go-elasticsearch/v8 v8.14.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gocql/gocql v1.6.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0

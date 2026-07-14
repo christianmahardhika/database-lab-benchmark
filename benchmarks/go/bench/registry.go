@@ -15,7 +15,7 @@ var driverFactory = map[string]func() DBDriver{
 	"clickhouse":    func() DBDriver { return &ClickHouseDriver{} },
 	"timescaledb":   func() DBDriver { return &TimescaleDriver{} },
 	"cockroachdb":   func() DBDriver { return &CockroachDriver{} },
-	"elasticsearch": func() DBDriver { return &ElasticsearchDriver{} },
+	"opensearch": func() DBDriver { return &OpenSearchDriver{} },
 	"neo4j":         func() DBDriver { return &Neo4jDriver{} },
 	"influxdb":      func() DBDriver { return &InfluxDBDriver{} },
 	"milvus":        func() DBDriver { return &MilvusDriver{} },

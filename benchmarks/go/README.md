@@ -28,7 +28,7 @@ High-performance benchmark suite for 16 databases, written in Go for minimal cli
 | ClickHouse | clickhouse-go | 9000 | MergeTree (Columnar) |
 | TimescaleDB | pgx | 5433 | B-Tree + Hypertable |
 | CockroachDB | pgx | 26257 | LSM (Pebble) + Raft |
-| Elasticsearch 8 | go-elasticsearch | 9200 | Inverted Index |
+| OpenSearch 2.15 | opensearch-go | 9200 | Inverted Index |
 | Neo4j 5 | neo4j-go-driver | 7687 | Native Graph |
 | InfluxDB 2.7 | influxdb-client-go | 8086 | TSM (Time-Series) |
 | Milvus 2.4 | milvus-sdk-go | 19530 | HNSW (Vector) |
@@ -69,7 +69,7 @@ bench/
 ├── driver_clickhouse.go
 ├── driver_timescale.go
 ├── driver_cockroach.go
-├── driver_elasticsearch.go
+├── driver_opensearch.go
 ├── driver_neo4j.go
 ├── driver_influxdb.go
 ├── driver_milvus.go
